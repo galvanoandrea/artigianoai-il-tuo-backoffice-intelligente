@@ -1,5 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,11 +21,52 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPwd, setLoginPwd] = useState("");
+  const [regName, setRegName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPwd, setRegPwd] = useState("");
 
-  const submit = (e: React.FormEvent) => {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) navigate({ to: "/dashboard" });
+    });
+  }, [navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => navigate({ to: "/dashboard" }), 400);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: loginEmail,
+      password: loginPwd,
+    });
+    setLoading(false);
+    if (error) {
+      toast.error("Accesso fallito", { description: error.message });
+      return;
+    }
+    toast.success("Bentornato!");
+    navigate({ to: "/dashboard" });
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email: regEmail,
+      password: regPwd,
+      options: {
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+        data: { nome_completo: regName },
+      },
+    });
+    setLoading(false);
+    if (error) {
+      toast.error("Registrazione fallita", { description: error.message });
+      return;
+    }
+    toast.success("Account creato!");
+    navigate({ to: "/dashboard" });
   };
 
   return (
@@ -67,14 +110,14 @@ function LoginPage() {
               <TabsContent value="login">
                 <h1 className="text-2xl font-bold mb-1">Accedi al tuo account</h1>
                 <p className="text-muted-foreground mb-6">Inserisci le tue credenziali per continuare.</p>
-                <form onSubmit={submit} className="space-y-4">
+                <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="mario@artigiano.it" required className="h-12" />
+                    <Input id="email" type="email" placeholder="mario@artigiano.it" required className="h-12" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="pwd">Password</Label>
-                    <Input id="pwd" type="password" placeholder="••••••••" required className="h-12" />
+                    <Input id="pwd" type="password" placeholder="••••••••" required className="h-12" value={loginPwd} onChange={(e) => setLoginPwd(e.target.value)} />
                   </div>
                   <Button type="submit" disabled={loading} className="w-full h-12 bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow text-base">
                     {loading ? "Accesso in corso…" : "Accedi"}
@@ -85,18 +128,18 @@ function LoginPage() {
               <TabsContent value="register">
                 <h1 className="text-2xl font-bold mb-1">Crea il tuo account</h1>
                 <p className="text-muted-foreground mb-6">È gratis e bastano 30 secondi.</p>
-                <form onSubmit={submit} className="space-y-4">
+                <form onSubmit={handleRegister} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nome e cognome</Label>
-                    <Input id="name" placeholder="Mario Rossi" required className="h-12" />
+                    <Input id="name" placeholder="Mario Rossi" required className="h-12" value={regName} onChange={(e) => setRegName(e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email2">Email</Label>
-                    <Input id="email2" type="email" placeholder="mario@artigiano.it" required className="h-12" />
+                    <Input id="email2" type="email" placeholder="mario@artigiano.it" required className="h-12" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="pwd2">Password</Label>
-                    <Input id="pwd2" type="password" placeholder="Almeno 8 caratteri" required className="h-12" />
+                    <Input id="pwd2" type="password" placeholder="Almeno 8 caratteri" required minLength={8} className="h-12" value={regPwd} onChange={(e) => setRegPwd(e.target.value)} />
                   </div>
                   <Button type="submit" disabled={loading} className="w-full h-12 bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow text-base">
                     {loading ? "Creazione…" : "Crea account"}
