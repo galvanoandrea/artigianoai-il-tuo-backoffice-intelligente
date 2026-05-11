@@ -29,7 +29,7 @@ function DashboardLayout() {
     if (!loading && !user) navigate({ to: "/login" });
   }, [loading, user, navigate]);
 
-  const userName = user?.user_metadata?.nome_completo || user?.email?.split("@")[0] || "Utente";
+  const userName: string = user?.user_metadata?.nome_completo || user?.email?.split("@")[0] || "Utente";
   const initials = userName
     .split(" ")
     .map((p) => p[0])
