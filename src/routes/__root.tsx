@@ -76,11 +76,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "ArtigianoAI — Backoffice per artigiani" },
       { name: "description", content: "Gestisci clienti e preventivi senza fatica. Pensato per elettricisti, idraulici, edili e installatori." },
       { name: "author", content: "ArtigianoAI" },
-      { property: "og:title", content: "ArtigianoAI" },
-      { property: "og:description", content: "Backoffice intelligente per artigiani italiani." },
+      { property: "og:title", content: "ArtigianoAI — Backoffice per artigiani" },
+      { property: "og:description", content: "Gestisci clienti e preventivi senza fatica. Pensato per elettricisti, idraulici, edili e installatori." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "ArtigianoAI — Backoffice per artigiani" },
+      { name: "twitter:description", content: "Gestisci clienti e preventivi senza fatica. Pensato per elettricisti, idraulici, edili e installatori." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/HkPR4eabisSNT3tr4HvMByGsJc63/social-images/social-1778491796292-2e9a6c2c-97a7-4375-ba36-1635ef17d23e.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/HkPR4eabisSNT3tr4HvMByGsJc63/social-images/social-1778491796292-2e9a6c2c-97a7-4375-ba36-1635ef17d23e.webp" },
     ],
     links: [
       {
