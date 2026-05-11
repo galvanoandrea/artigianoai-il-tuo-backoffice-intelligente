@@ -1,4 +1,8 @@
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import {
@@ -19,12 +23,28 @@ export const Route = createFileRoute("/dashboard")({
 
 function DashboardLayout() {
   const navigate = useNavigate();
-  const userName = "Mario Artigiano";
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user) navigate({ to: "/login" });
+  }, [loading, user, navigate]);
+
+  const userName = user?.user_metadata?.nome_completo || user?.email?.split("@")[0] || "Utente";
   const initials = userName
     .split(" ")
     .map((p) => p[0])
     .slice(0, 2)
     .join("");
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success("Disconnesso");
+    navigate({ to: "/login" });
+  };
+
+  if (loading || !user) {
+    return <div className="min-h-screen grid place-items-center text-muted-foreground">Caricamento…</div>;
+  }
 
   return (
     <SidebarProvider>
@@ -58,7 +78,7 @@ function DashboardLayout() {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={() => navigate({ to: "/login" })}
+                  onClick={handleLogout}
                   className="cursor-pointer text-destructive focus:text-destructive"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
