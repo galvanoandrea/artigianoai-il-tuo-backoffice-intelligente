@@ -16,8 +16,11 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
+          cognome: string | null
           created_at: string
           id: string
+          indirizzo: string | null
+          nome: string | null
           nome_azienda: string | null
           nome_completo: string | null
           partita_iva: string | null
@@ -25,8 +28,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cognome?: string | null
           created_at?: string
           id: string
+          indirizzo?: string | null
+          nome?: string | null
           nome_azienda?: string | null
           nome_completo?: string | null
           partita_iva?: string | null
@@ -34,8 +40,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cognome?: string | null
           created_at?: string
           id?: string
+          indirizzo?: string | null
+          nome?: string | null
           nome_azienda?: string | null
           nome_completo?: string | null
           partita_iva?: string | null
