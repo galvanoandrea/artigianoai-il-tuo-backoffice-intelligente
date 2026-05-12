@@ -1,5 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Users, FileText, Settings, Wrench, LayoutDashboard } from "lucide-react";
+import { Users, FileText, Settings, Wrench, LayoutDashboard, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { checkIsAdmin } from "@/lib/admin.functions";
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +26,16 @@ export function AppSidebar() {
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
   const isActive = (path: string) =>
     path === "/dashboard" ? currentPath === path : currentPath.startsWith(path);
+  const checkFn = useServerFn(checkIsAdmin);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    checkFn().then((r) => setIsAdmin(!!r.isAdmin)).catch(() => setIsAdmin(false));
+  }, [checkFn]);
+
+  const menuItems = isAdmin
+    ? [...items, { title: "Admin", url: "/dashboard/admin", icon: ShieldCheck }]
+    : items;
 
   return (
     <Sidebar collapsible="icon">
@@ -41,7 +54,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild

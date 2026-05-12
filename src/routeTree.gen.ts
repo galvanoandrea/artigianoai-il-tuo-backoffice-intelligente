@@ -18,6 +18,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardPreventiviRouteImport } from './routes/dashboard.preventivi'
 import { Route as DashboardImpostazioniRouteImport } from './routes/dashboard.impostazioni'
 import { Route as DashboardClientiRouteImport } from './routes/dashboard.clienti'
+import { Route as DashboardAdminRouteImport } from './routes/dashboard.admin'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -64,6 +65,11 @@ const DashboardClientiRoute = DashboardClientiRouteImport.update({
   path: '/clienti',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardAdminRoute = DashboardAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
   '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
   '/dashboard/preventivi': typeof DashboardPreventiviRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
   '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
   '/dashboard/preventivi': typeof DashboardPreventiviRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
   '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
   '/dashboard/preventivi': typeof DashboardPreventiviRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/reset-password'
+    | '/dashboard/admin'
     | '/dashboard/clienti'
     | '/dashboard/impostazioni'
     | '/dashboard/preventivi'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/reset-password'
+    | '/dashboard/admin'
     | '/dashboard/clienti'
     | '/dashboard/impostazioni'
     | '/dashboard/preventivi'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/reset-password'
+    | '/dashboard/admin'
     | '/dashboard/clienti'
     | '/dashboard/impostazioni'
     | '/dashboard/preventivi'
@@ -206,10 +218,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardClientiRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/admin': {
+      id: '/dashboard/admin'
+      path: '/admin'
+      fullPath: '/dashboard/admin'
+      preLoaderRoute: typeof DashboardAdminRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
 interface DashboardRouteChildren {
+  DashboardAdminRoute: typeof DashboardAdminRoute
   DashboardClientiRoute: typeof DashboardClientiRoute
   DashboardImpostazioniRoute: typeof DashboardImpostazioniRoute
   DashboardPreventiviRoute: typeof DashboardPreventiviRoute
@@ -217,6 +237,7 @@ interface DashboardRouteChildren {
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardAdminRoute: DashboardAdminRoute,
   DashboardClientiRoute: DashboardClientiRoute,
   DashboardImpostazioniRoute: DashboardImpostazioniRoute,
   DashboardPreventiviRoute: DashboardPreventiviRoute,
