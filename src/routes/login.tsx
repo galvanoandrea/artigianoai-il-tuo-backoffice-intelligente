@@ -122,6 +122,11 @@ function LoginPage() {
                   <Button type="submit" disabled={loading} className="w-full h-12 bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow text-base">
                     {loading ? "Accesso in corso…" : "Accedi"}
                   </Button>
+                  <div className="text-center">
+                    <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
+                      Hai dimenticato la password?
+                    </Link>
+                  </div>
                 </form>
               </TabsContent>
 
