@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const inviteSchema = z.object({
   email: z.string().email().max(255),
+  redirectTo: z.string().url().max(500),
 });
 
 export const inviteUser = createServerFn({ method: "POST" })
@@ -21,11 +22,8 @@ export const inviteUser = createServerFn({ method: "POST" })
       throw new Response("Forbidden: admin role required", { status: 403 });
     }
 
-    const origin = process.env.SITE_URL || process.env.VITE_SITE_URL || "";
-    const redirectTo = origin ? `${origin}/reset-password` : undefined;
-
     const { error } = await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
-      redirectTo,
+      redirectTo: data.redirectTo,
     });
     if (error) {
       return { ok: false, error: error.message };
