@@ -14,6 +14,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardPreventiviRouteImport } from './routes/dashboard.preventivi'
+import { Route as DashboardImpostazioniRouteImport } from './routes/dashboard.impostazioni'
 import { Route as DashboardClientiRouteImport } from './routes/dashboard.clienti'
 
 const LoginRoute = LoginRouteImport.update({
@@ -41,6 +42,11 @@ const DashboardPreventiviRoute = DashboardPreventiviRouteImport.update({
   path: '/preventivi',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardImpostazioniRoute = DashboardImpostazioniRouteImport.update({
+  id: '/impostazioni',
+  path: '/impostazioni',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardClientiRoute = DashboardClientiRouteImport.update({
   id: '/clienti',
   path: '/clienti',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
+  '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
   '/dashboard/preventivi': typeof DashboardPreventiviRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
+  '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
   '/dashboard/preventivi': typeof DashboardPreventiviRoute
   '/dashboard': typeof DashboardIndexRoute
 }
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
+  '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
   '/dashboard/preventivi': typeof DashboardPreventiviRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
@@ -78,6 +87,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/dashboard/clienti'
+    | '/dashboard/impostazioni'
     | '/dashboard/preventivi'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/dashboard/clienti'
+    | '/dashboard/impostazioni'
     | '/dashboard/preventivi'
     | '/dashboard'
   id:
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/dashboard/clienti'
+    | '/dashboard/impostazioni'
     | '/dashboard/preventivi'
     | '/dashboard/'
   fileRoutesById: FileRoutesById
@@ -140,6 +152,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardPreventiviRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/impostazioni': {
+      id: '/dashboard/impostazioni'
+      path: '/impostazioni'
+      fullPath: '/dashboard/impostazioni'
+      preLoaderRoute: typeof DashboardImpostazioniRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/clienti': {
       id: '/dashboard/clienti'
       path: '/clienti'
@@ -152,12 +171,14 @@ declare module '@tanstack/react-router' {
 
 interface DashboardRouteChildren {
   DashboardClientiRoute: typeof DashboardClientiRoute
+  DashboardImpostazioniRoute: typeof DashboardImpostazioniRoute
   DashboardPreventiviRoute: typeof DashboardPreventiviRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardClientiRoute: DashboardClientiRoute,
+  DashboardImpostazioniRoute: DashboardImpostazioniRoute,
   DashboardPreventiviRoute: DashboardPreventiviRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
