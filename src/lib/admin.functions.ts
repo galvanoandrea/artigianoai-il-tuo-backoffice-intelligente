@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { attachSupabaseAuth } from "@/integrations/supabase/auth-client-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const inviteSchema = z.object({
@@ -9,7 +10,7 @@ const inviteSchema = z.object({
 });
 
 export const inviteUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .inputValidator((input) => inviteSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
@@ -32,7 +33,7 @@ export const inviteUser = createServerFn({ method: "POST" })
   });
 
 export const checkIsAdmin = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
     const { data, error } = await supabaseAdmin.rpc("has_role", {
