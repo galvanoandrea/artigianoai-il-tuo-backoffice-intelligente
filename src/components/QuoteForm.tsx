@@ -11,6 +11,7 @@ import { useClients } from "@/lib/clients-store";
 import {
   type Quote, type QuoteItem, type QuoteStatus, calcTotals, formatEuro,
 } from "@/lib/quotes-store";
+import { AIQuoteGenerator, type AIQuoteResult } from "@/components/AIQuoteGenerator";
 
 type FormData = Omit<Quote, "id" | "numero">;
 
@@ -65,6 +66,22 @@ export function QuoteForm({
 
   const totals = calcTotals(data.voci, data.ivaPercentuale);
 
+  const applyAIResult = (ai: AIQuoteResult) => {
+    setData((d) => ({
+      ...d,
+      titolo: ai.titolo,
+      descrizione: ai.descrizione,
+      voci: ai.voci.map((v, i) => ({
+        id: `v${Date.now()}${i}${Math.random().toString(36).slice(2, 6)}`,
+        descrizione: v.unita && v.unita !== "cad"
+          ? `${v.descrizione} (${v.unita})`
+          : v.descrizione,
+        quantita: v.quantita,
+        prezzoUnitario: v.prezzo_unitario,
+      })),
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!data.clienteId || !data.titolo.trim()) return;
@@ -73,6 +90,8 @@ export function QuoteForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {!initial && <AIQuoteGenerator onGenerated={applyAIResult} />}
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="cliente">Cliente *</Label>
