@@ -91,9 +91,27 @@ export default async function handler(req: any, res: any) {
     if (!resp.ok) {
       const errText = await resp.text();
       console.error("[generate-quote] Gemini error", resp.status, errText);
+      let detail = errText.slice(0, 500);
+      if (resp.status === 404) {
+        try {
+          const listResp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+          );
+          if (listResp.ok) {
+            const list: any = await listResp.json();
+            const names = (list?.models ?? [])
+              .filter((m: any) => m?.supportedGenerationMethods?.includes("generateContent"))
+              .map((m: any) => m?.name?.replace(/^models\//, ""))
+              .filter(Boolean)
+              .slice(0, 20)
+              .join(", ");
+            detail = `Modello "${model}" non trovato. Disponibili: ${names || "(nessuno)"}`;
+          }
+        } catch { /* noop */ }
+      }
       return res.status(502).json({
         error: `Gemini ha risposto ${resp.status}`,
-        detail: errText.slice(0, 500),
+        detail,
       });
     }
 
