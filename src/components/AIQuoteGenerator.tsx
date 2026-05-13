@@ -142,16 +142,25 @@ export function AIQuoteGenerator({
         },
         body: JSON.stringify({ descrizione }),
       });
-      const result = await resp.json();
+      const raw = await resp.text();
+      let result: any = null;
+      try { result = raw ? JSON.parse(raw) : null; } catch { /* not JSON */ }
       if (!resp.ok) {
-        toast.error(result?.error || "Si è verificato un errore, riprova");
+        const detail = result?.error || result?.detail || raw?.slice(0, 300) || "nessun dettaglio";
+        const msg = `Errore ${resp.status}: ${detail}`;
+        console.error("[AIQuoteGenerator] server error", resp.status, raw);
+        toast.error(msg, { duration: 10000 });
+        return;
+      }
+      if (!result) {
+        toast.error("Risposta non valida dal server", { duration: 10000 });
         return;
       }
       onGenerated(result as AIQuoteResult);
       toast.success("Preventivo generato con successo! Puoi modificare i valori prima di salvare.");
-    } catch (err) {
+    } catch (err: any) {
       console.error("[AIQuoteGenerator]", err);
-      toast.error("Si è verificato un errore, riprova");
+      toast.error(`Errore di rete: ${err?.message || String(err)}`, { duration: 10000 });
     } finally {
       setLoading(false);
     }

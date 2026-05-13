@@ -58,11 +58,18 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  if (!process.env.SUPABASE_URL) {
+    return res.status(500).json({ error: "SUPABASE_URL non configurata su Vercel" });
+  }
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY non configurata su Vercel" });
+  }
+
   const userId = await getUserId(req.headers.authorization);
-  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+  if (!userId) return res.status(401).json({ error: "Auth fallita (token Supabase non valido)" });
 
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY non configurata" });
+  if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY non configurata su Vercel" });
 
   const descrizione: string = (req.body?.descrizione ?? "").toString().trim();
   if (!descrizione) {
@@ -89,13 +96,22 @@ export default async function handler(req: any, res: any) {
     if (!resp.ok) {
       const errText = await resp.text();
       console.error("[generate-quote] Gemini error", resp.status, errText);
-      return res.status(502).json({ error: "Si è verificato un errore, riprova" });
+      return res.status(502).json({
+        error: `Gemini ha risposto ${resp.status}`,
+        detail: errText.slice(0, 500),
+      });
     }
 
     const data: any = await resp.json();
     const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
     if (!text) {
-      return res.status(502).json({ error: "Si è verificato un errore, riprova" });
+      const finishReason = data?.candidates?.[0]?.finishReason;
+      const promptFeedback = data?.promptFeedback;
+      console.error("[generate-quote] Empty Gemini response", JSON.stringify(data).slice(0, 500));
+      return res.status(502).json({
+        error: "Gemini ha restituito risposta vuota",
+        detail: `finishReason=${finishReason} promptFeedback=${JSON.stringify(promptFeedback)}`,
+      });
     }
 
     let parsed: any;
@@ -103,7 +119,10 @@ export default async function handler(req: any, res: any) {
       parsed = JSON.parse(extractJson(text));
     } catch {
       console.error("[generate-quote] JSON parse failed", text);
-      return res.status(502).json({ error: "Si è verificato un errore, riprova" });
+      return res.status(502).json({
+        error: "JSON Gemini non valido",
+        detail: text.slice(0, 300),
+      });
     }
 
     if (
@@ -113,7 +132,10 @@ export default async function handler(req: any, res: any) {
       !Array.isArray(parsed.voci) ||
       parsed.voci.length === 0
     ) {
-      return res.status(502).json({ error: "Si è verificato un errore, riprova" });
+      return res.status(502).json({
+        error: "Risposta Gemini con struttura inattesa",
+        detail: JSON.stringify(parsed).slice(0, 300),
+      });
     }
 
     const voci = parsed.voci.slice(0, 8).map((v: any) => ({
@@ -128,8 +150,11 @@ export default async function handler(req: any, res: any) {
       descrizione: String(parsed.descrizione).trim(),
       voci,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error("[generate-quote] unexpected", err);
-    return res.status(500).json({ error: "Si è verificato un errore, riprova" });
+    return res.status(500).json({
+      error: "Errore imprevisto",
+      detail: err?.message || String(err),
+    });
   }
 }
