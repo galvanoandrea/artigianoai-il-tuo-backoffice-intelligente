@@ -59,13 +59,6 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  if (!process.env.SUPABASE_URL) {
-    return res.status(500).json({ error: "SUPABASE_URL non configurata su Vercel" });
-  }
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY non configurata su Vercel" });
-  }
-
   const userId = await getUserId(req.headers.authorization);
   if (!userId) return res.status(401).json({ error: "Auth fallita (token Supabase non valido)" });
 
