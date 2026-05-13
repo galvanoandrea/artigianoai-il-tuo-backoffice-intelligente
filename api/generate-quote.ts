@@ -1,18 +1,19 @@
 import { createClient } from "@supabase/supabase-js";
 
-function getAdminClient() {
-  return createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
-}
+const SUPABASE_URL =
+  process.env.SUPABASE_URL || "https://bqwyevchiblvxmosvabl.supabase.co";
+const SUPABASE_ANON_KEY =
+  process.env.SUPABASE_PUBLISHABLE_KEY ||
+  process.env.SUPABASE_ANON_KEY ||
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxd3lldmNoaWJsdnhtb3N2YWJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDU5MTAsImV4cCI6MjA5NDAyMTkxMH0.fvL0BNrDgMVZjjDdEVszIk_58-APCbkQzpj9N52E-80";
 
 async function getUserId(authHeader: string | undefined): Promise<string | null> {
   if (!authHeader?.startsWith("Bearer ")) return null;
   const token = authHeader.replace("Bearer ", "");
-  const admin = getAdminClient();
-  const { data: { user }, error } = await admin.auth.getUser(token);
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: { user }, error } = await client.auth.getUser(token);
   if (error || !user) return null;
   return user.id;
 }
@@ -56,13 +57,6 @@ function extractJson(text: string): string {
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  if (!process.env.SUPABASE_URL) {
-    return res.status(500).json({ error: "SUPABASE_URL non configurata su Vercel" });
-  }
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return res.status(500).json({ error: "SUPABASE_SERVICE_ROLE_KEY non configurata su Vercel" });
   }
 
   const userId = await getUserId(req.headers.authorization);
