@@ -1,8 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Users, FileText, Settings, Wrench, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { checkIsAdmin } from "@/lib/admin.functions";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Sidebar,
   SidebarContent,
@@ -26,12 +25,19 @@ export function AppSidebar() {
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
   const isActive = (path: string) =>
     path === "/dashboard" ? currentPath === path : currentPath.startsWith(path);
-  const checkFn = useServerFn(checkIsAdmin);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    checkFn().then((r) => setIsAdmin(!!r.isAdmin)).catch(() => setIsAdmin(false));
-  }, [checkFn]);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.access_token) return;
+      fetch("/api/admin", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+        .then((r) => r.json())
+        .then((r) => setIsAdmin(!!r.isAdmin))
+        .catch(() => setIsAdmin(false));
+    });
+  }, []);
 
   const menuItems = isAdmin
     ? [...items, { title: "Admin", url: "/dashboard/admin", icon: ShieldCheck }]
