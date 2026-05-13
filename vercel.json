@@ -1,4 +1,8 @@
 {
-  "buildCommand": "NITRO_PRESET=vercel-edge npm run build",
-  "installCommand": "npm install"
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "outputDirectory": "dist/client",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/_shell" }
+  ]
 }

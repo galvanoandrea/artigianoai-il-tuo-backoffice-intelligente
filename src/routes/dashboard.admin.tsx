@@ -1,13 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { ShieldCheck, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { inviteUser, checkIsAdmin } from "@/lib/admin.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/dashboard/admin")({
   head: () => ({
@@ -16,41 +15,47 @@ export const Route = createFileRoute("/dashboard/admin")({
   component: AdminPage,
 });
 
+async function getAuthHeader(): Promise<string | null> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ? `Bearer ${session.access_token}` : null;
+}
+
 function AdminPage() {
   const navigate = useNavigate();
-  const checkFn = useServerFn(checkIsAdmin);
-  const inviteFn = useServerFn(inviteUser);
   const [checking, setChecking] = useState(true);
   const [allowed, setAllowed] = useState(false);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    checkFn()
+    getAuthHeader()
+      .then((auth) => {
+        if (!auth) { navigate({ to: "/dashboard" }); return; }
+        return fetch("/api/admin", { headers: { Authorization: auth } }).then((r) => r.json());
+      })
       .then((res) => {
-        if (!res.isAdmin) {
+        if (!res?.isAdmin) {
           toast.error("Accesso negato");
           navigate({ to: "/dashboard" });
           return;
         }
         setAllowed(true);
       })
-      .catch(() => {
-        navigate({ to: "/dashboard" });
-      })
+      .catch(() => navigate({ to: "/dashboard" }))
       .finally(() => setChecking(false));
-  }, [checkFn, navigate]);
+  }, [navigate]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await inviteFn({
-        data: {
-          email,
-          redirectTo: `${window.location.origin}/reset-password`,
-        },
-      });
+      const auth = await getAuthHeader();
+      if (!auth) { toast.error("Non autenticato"); return; }
+      const res = await fetch("/api/admin", {
+        method: "POST",
+        headers: { Authorization: auth, "Content-Type": "application/json" },
+        body: JSON.stringify({ email, redirectTo: `${window.location.origin}/reset-password` }),
+      }).then((r) => r.json());
       if (!res.ok) {
         toast.error("Invito fallito", { description: res.error });
       } else {
