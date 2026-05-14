@@ -19,6 +19,7 @@ import { Route as DashboardPreventiviRouteImport } from './routes/dashboard.prev
 import { Route as DashboardImpostazioniRouteImport } from './routes/dashboard.impostazioni'
 import { Route as DashboardClientiRouteImport } from './routes/dashboard.clienti'
 import { Route as DashboardAdminRouteImport } from './routes/dashboard.admin'
+import { Route as DashboardFornitoriRouteImport } from './routes/dashboard.fornitori'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -70,6 +71,11 @@ const DashboardAdminRoute = DashboardAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardFornitoriRoute = DashboardFornitoriRouteImport.update({
+  id: '/fornitori',
+  path: '/fornitori',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
+  '/dashboard/fornitori': typeof DashboardFornitoriRoute
   '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
   '/dashboard/preventivi': typeof DashboardPreventiviRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -90,6 +97,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
+  '/dashboard/fornitori': typeof DashboardFornitoriRoute
   '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
   '/dashboard/preventivi': typeof DashboardPreventiviRoute
   '/dashboard': typeof DashboardIndexRoute
@@ -103,6 +111,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
+  '/dashboard/fornitori': typeof DashboardFornitoriRoute
   '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
   '/dashboard/preventivi': typeof DashboardPreventiviRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/dashboard/admin'
     | '/dashboard/clienti'
+    | '/dashboard/fornitori'
     | '/dashboard/impostazioni'
     | '/dashboard/preventivi'
     | '/dashboard/'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/dashboard/admin'
     | '/dashboard/clienti'
+    | '/dashboard/fornitori'
     | '/dashboard/impostazioni'
     | '/dashboard/preventivi'
     | '/dashboard'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/dashboard/admin'
     | '/dashboard/clienti'
+    | '/dashboard/fornitori'
     | '/dashboard/impostazioni'
     | '/dashboard/preventivi'
     | '/dashboard/'
@@ -225,12 +237,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/fornitori': {
+      id: '/dashboard/fornitori'
+      path: '/fornitori'
+      fullPath: '/dashboard/fornitori'
+      preLoaderRoute: typeof DashboardFornitoriRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
 interface DashboardRouteChildren {
   DashboardAdminRoute: typeof DashboardAdminRoute
   DashboardClientiRoute: typeof DashboardClientiRoute
+  DashboardFornitoriRoute: typeof DashboardFornitoriRoute
   DashboardImpostazioniRoute: typeof DashboardImpostazioniRoute
   DashboardPreventiviRoute: typeof DashboardPreventiviRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
@@ -239,6 +259,7 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAdminRoute: DashboardAdminRoute,
   DashboardClientiRoute: DashboardClientiRoute,
+  DashboardFornitoriRoute: DashboardFornitoriRoute,
   DashboardImpostazioniRoute: DashboardImpostazioniRoute,
   DashboardPreventiviRoute: DashboardPreventiviRoute,
   DashboardIndexRoute: DashboardIndexRoute,

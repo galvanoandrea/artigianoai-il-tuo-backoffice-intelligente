@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Users, FileText, Settings, Wrench, LayoutDashboard, ShieldCheck } from "lucide-react";
+import { Users, FileText, Settings, Wrench, LayoutDashboard, ShieldCheck, Building2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -18,6 +18,7 @@ const items = [
   { title: "Panoramica", url: "/dashboard", icon: LayoutDashboard },
   { title: "Clienti", url: "/dashboard/clienti", icon: Users },
   { title: "Preventivi", url: "/dashboard/preventivi", icon: FileText },
+  { title: "Fornitori", url: "/dashboard/fornitori", icon: Building2 },
   { title: "Impostazioni", url: "/dashboard/impostazioni", icon: Settings },
 ];
 
