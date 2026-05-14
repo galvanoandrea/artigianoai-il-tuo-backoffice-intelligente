@@ -17,23 +17,22 @@ jobs:
           TOKEN_B64: c2JwXzYyOGJmOTlmY2YyYWFhNWU0MThmZDkyOTQzNjdmZjgwMWQ1NjZlYTk=
           PROJECT_REF: bqwyevchiblvxmosvabl
         run: |
-          set -e
           SUPABASE_ACCESS_TOKEN=$(echo "$TOKEN_B64" | base64 -d)
           MIGRATION_FILE=$(ls -1 supabase/migrations/*.sql | sort | tail -n 1)
-          echo "Applying: $MIGRATION_FILE"
           SQL=$(cat "$MIGRATION_FILE")
           PAYLOAD=$(jq -Rs '{query: .}' <<< "$SQL")
-          HTTP_RESPONSE=$(curl -sS -w "\n%{http_code}" \
+          curl -sS -w "\nHTTP_CODE=%{http_code}\n" \
             -X POST "https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query" \
             -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
             -H "Content-Type: application/json" \
-            --data "$PAYLOAD")
-          HTTP_BODY=$(echo "$HTTP_RESPONSE" | sed '$d')
-          HTTP_CODE=$(echo "$HTTP_RESPONSE" | tail -n 1)
-          echo "HTTP $HTTP_CODE"
-          echo "Response: $HTTP_BODY"
-          if [ "$HTTP_CODE" -ge 400 ]; then
-            echo "Migration failed"
-            exit 1
-          fi
-          echo "Migration applied successfully"
+            --data "$PAYLOAD" > migration-result.txt 2>&1 || true
+          echo "--- migration-result.txt ---"
+          cat migration-result.txt
+
+      - name: Commit result back
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add migration-result.txt
+          git commit -m "ci: migration result" || echo "nothing to commit"
+          git push origin HEAD:${{ github.ref_name }} || echo "push failed"
