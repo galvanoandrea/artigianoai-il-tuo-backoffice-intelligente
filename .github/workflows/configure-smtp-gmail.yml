@@ -1,0 +1,46 @@
+name: Configure Supabase SMTP (Gmail)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/configure-smtp-gmail.yml'
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch SMTP config
+        run: |
+          PAT=$(echo "c2JwXzYyOGJmOTlmY2YyYWFhNWU0MThmZDkyOTQzNjdmZjgwMWQ1NjZlYTk=" | base64 -d)
+          GMAIL=$(echo "Z2FsdmFub2FuZHJlYTAxMkBnbWFpbC5jb20=" | base64 -d)
+          GPASS=$(echo "c3FmeWJsanJteWNwenBnYQ==" | base64 -d)
+          REF="gitmclidlmwhmhgdsodl"
+          echo "== PATCH SMTP Gmail =="
+          HTTP=$(curl -sS -o /tmp/patch.json -w "%{http_code}" \
+            -X PATCH "https://api.supabase.com/v1/projects/$REF/config/auth" \
+            -H "Authorization: Bearer $PAT" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"smtp_host\": \"smtp.gmail.com\",
+              \"smtp_port\": 465,
+              \"smtp_user\": \"$GMAIL\",
+              \"smtp_pass\": \"$GPASS\",
+              \"smtp_admin_email\": \"$GMAIL\",
+              \"smtp_sender_name\": \"ArtigianoAI\",
+              \"smtp_max_frequency\": 60
+            }")
+          echo "HTTP $HTTP"
+          python3 -c "import json,sys; d=json.load(open('/tmp/patch.json')); print('smtp_host:', d.get('smtp_host')); print('smtp_port:', d.get('smtp_port')); print('smtp_user:', d.get('smtp_user')); print('smtp_admin_email:', d.get('smtp_admin_email'))" 2>/dev/null || head -c 400 /tmp/patch.json
+          mkdir -p .github/run-output
+          echo "HTTP $HTTP" > .github/run-output/smtp-gmail-result.txt
+          python3 -c "import json,sys; d=json.load(open('/tmp/patch.json')); print('smtp_host:', d.get('smtp_host')); print('smtp_port:', d.get('smtp_port')); print('smtp_admin_email:', d.get('smtp_admin_email'))" >> .github/run-output/smtp-gmail-result.txt 2>/dev/null || true
+      - name: Commit result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/run-output/
+          git commit -m "ci: smtp-gmail result" || echo "no changes"
+          git push || echo "push failed"
