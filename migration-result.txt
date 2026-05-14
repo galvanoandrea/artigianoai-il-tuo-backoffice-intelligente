@@ -1,2 +1,2 @@
-{"message":"Failed to run sql query: ERROR:  42883: function public.update_updated_at_column() does not exist\n"}
-HTTP_CODE=400
+[]
+HTTP_CODE=201
