@@ -20,8 +20,10 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPwd, setLoginPwd] = useState("");
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [email, setEmail] = useState("");
+  const [pwd, setPwd] = useState("");
+  const [pwdConfirm, setPwdConfirm] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -32,10 +34,7 @@ function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: loginEmail,
-      password: loginPwd,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password: pwd });
     setLoading(false);
     if (error) {
       toast.error("Accesso fallito", { description: error.message });
@@ -43,6 +42,32 @@ function LoginPage() {
     }
     toast.success("Bentornato!");
     navigate({ to: "/dashboard" });
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pwd !== pwdConfirm) {
+      toast.error("Le password non coincidono");
+      return;
+    }
+    if (pwd.length < 6) {
+      toast.error("La password deve essere di almeno 6 caratteri");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({ email, password: pwd });
+    setLoading(false);
+    if (error) {
+      toast.error("Registrazione fallita", { description: error.message });
+      return;
+    }
+    toast.success("Account creato!", {
+      description: "Controlla la tua email per confermare la registrazione, oppure accedi direttamente se la conferma email è disabilitata.",
+      duration: 8000,
+    });
+    setMode("login");
+    setPwd("");
+    setPwdConfirm("");
   };
 
   return (
@@ -57,8 +82,14 @@ function LoginPage() {
           <span className="font-bold text-lg">ArtigianoAI</span>
         </Link>
         <div className="relative">
-          <h2 className="text-4xl font-bold mb-3">Bentornato al lavoro.</h2>
-          <p className="text-white/80 text-lg">Accedi per gestire clienti e preventivi in un attimo.</p>
+          <h2 className="text-4xl font-bold mb-3">
+            {mode === "login" ? "Bentornato al lavoro." : "Inizia subito."}
+          </h2>
+          <p className="text-white/80 text-lg">
+            {mode === "login"
+              ? "Accedi per gestire clienti e preventivi in un attimo."
+              : "Crea il tuo account e inizia a gestire il tuo lavoro."}
+          </p>
         </div>
         <div className="relative text-sm text-white/60">© ArtigianoAI</div>
       </div>
@@ -77,26 +108,78 @@ function LoginPage() {
               <span className="font-bold text-lg">ArtigianoAI</span>
             </div>
 
-            <h1 className="text-2xl font-bold mb-1">Accedi al tuo account</h1>
-            <p className="text-muted-foreground mb-6">L'accesso è riservato agli utenti invitati.</p>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="mario@artigiano.it" required className="h-12" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="pwd">Password</Label>
-                <Input id="pwd" type="password" placeholder="••••••••" required className="h-12" value={loginPwd} onChange={(e) => setLoginPwd(e.target.value)} />
-              </div>
-              <Button type="submit" disabled={loading} className="w-full h-12 bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow text-base">
-                {loading ? "Accesso in corso…" : "Accedi"}
-              </Button>
-              <div className="text-center">
-                <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
-                  Hai dimenticato la password?
-                </Link>
-              </div>
-            </form>
+            {/* Toggle */}
+            <div className="flex rounded-lg border border-border mb-6 p-1 gap-1">
+              <button
+                type="button"
+                onClick={() => setMode("login")}
+                className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+                  mode === "login"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Accedi
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("signup")}
+                className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+                  mode === "signup"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Registrati
+              </button>
+            </div>
+
+            {mode === "login" ? (
+              <>
+                <h1 className="text-2xl font-bold mb-1">Accedi al tuo account</h1>
+                <p className="text-muted-foreground mb-6">Inserisci le tue credenziali per continuare.</p>
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input id="email" type="email" placeholder="mario@artigiano.it" required className="h-12" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pwd">Password</Label>
+                    <Input id="pwd" type="password" placeholder="••••••••" required className="h-12" value={pwd} onChange={(e) => setPwd(e.target.value)} />
+                  </div>
+                  <Button type="submit" disabled={loading} className="w-full h-12 bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow text-base">
+                    {loading ? "Accesso in corso…" : "Accedi"}
+                  </Button>
+                  <div className="text-center">
+                    <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
+                      Hai dimenticato la password?
+                    </Link>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <>
+                <h1 className="text-2xl font-bold mb-1">Crea il tuo account</h1>
+                <p className="text-muted-foreground mb-6">Registrati per iniziare a usare ArtigianoAI.</p>
+                <form onSubmit={handleSignup} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email-signup">Email</Label>
+                    <Input id="email-signup" type="email" placeholder="mario@artigiano.it" required className="h-12" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pwd-signup">Password</Label>
+                    <Input id="pwd-signup" type="password" placeholder="••••••••" required className="h-12" value={pwd} onChange={(e) => setPwd(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pwd-confirm">Conferma password</Label>
+                    <Input id="pwd-confirm" type="password" placeholder="••••••••" required className="h-12" value={pwdConfirm} onChange={(e) => setPwdConfirm(e.target.value)} />
+                  </div>
+                  <Button type="submit" disabled={loading} className="w-full h-12 bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow text-base">
+                    {loading ? "Registrazione in corso…" : "Crea account"}
+                  </Button>
+                </form>
+              </>
+            )}
           </div>
         </div>
       </div>
