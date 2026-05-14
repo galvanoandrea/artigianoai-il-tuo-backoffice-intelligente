@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 export type QuoteStatus = "bozza" | "inviato" | "accettato" | "rifiutato";
@@ -79,6 +80,7 @@ export async function loadQuotes() {
       .order("created_at", { ascending: false });
     if (error) {
       console.error("[quotes-store] load error:", error);
+      toast.error(`Errore caricamento preventivi: ${error.message}`);
       return;
     }
     quotes = (data ?? []).map((r) => rowToQuote(r as Row));
@@ -130,6 +132,7 @@ export async function addQuote(data: Omit<Quote, "id" | "numero">) {
     .single();
   if (error || !row) {
     console.error("[quotes-store] add error:", error);
+    toast.error(`Errore salvataggio preventivo: ${error?.message ?? "risposta vuota"}`);
     return;
   }
   quotes = [rowToQuote(row as Row), ...quotes];
@@ -145,6 +148,7 @@ export async function updateQuote(id: string, data: Omit<Quote, "id" | "numero">
     .single();
   if (error || !row) {
     console.error("[quotes-store] update error:", error);
+    toast.error(`Errore aggiornamento preventivo: ${error?.message ?? "risposta vuota"}`);
     return;
   }
   quotes = quotes.map((q) => (q.id === id ? rowToQuote(row as Row) : q));
@@ -160,6 +164,7 @@ export async function setQuoteStatus(id: string, stato: QuoteStatus) {
     .single();
   if (error || !row) {
     console.error("[quotes-store] setStatus error:", error);
+    toast.error(`Errore cambio stato: ${error?.message ?? "risposta vuota"}`);
     return;
   }
   quotes = quotes.map((q) => (q.id === id ? rowToQuote(row as Row) : q));
@@ -170,6 +175,7 @@ export async function deleteQuote(id: string) {
   const { error } = await supabase.from("quotes").delete().eq("id", id);
   if (error) {
     console.error("[quotes-store] delete error:", error);
+    toast.error(`Errore eliminazione preventivo: ${error.message}`);
     return;
   }
   quotes = quotes.filter((q) => q.id !== id);
