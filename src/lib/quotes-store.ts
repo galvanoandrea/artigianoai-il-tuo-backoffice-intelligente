@@ -1,4 +1,5 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export type QuoteStatus = "bozza" | "inviato" | "accettato" | "rifiutato";
 
@@ -22,120 +23,155 @@ export interface Quote {
   stato: QuoteStatus;
 }
 
-let quotes: Quote[] = [
-  {
-    id: "q1",
-    numero: "2025-001",
-    clienteId: "c1",
-    data: "2025-04-12",
-    titolo: "Installazione impianto elettrico",
-    descrizione: "Rifacimento completo impianto elettrico appartamento 90mq.",
-    voci: [
-      { id: "v1", descrizione: "Fornitura quadro elettrico con interruttori", quantita: 1, prezzoUnitario: 480 },
-      { id: "v2", descrizione: "Punto luce con cablaggio", quantita: 18, prezzoUnitario: 45 },
-      { id: "v3", descrizione: "Manodopera elettricista", quantita: 32, prezzoUnitario: 35 },
-    ],
-    note: "Validità preventivo 30 giorni. Pagamento 50% all'inizio lavori, 50% al termine.",
-    ivaPercentuale: 22,
-    stato: "accettato",
-  },
-  {
-    id: "q2",
-    numero: "2025-002",
-    clienteId: "c2",
-    data: "2025-04-25",
-    titolo: "Sostituzione tubature bagno",
-    descrizione: "Sostituzione completa tubature acqua calda/fredda e scarichi bagno principale.",
-    voci: [
-      { id: "v1", descrizione: "Tubazioni multistrato e raccordi", quantita: 1, prezzoUnitario: 320 },
-      { id: "v2", descrizione: "Smontaggio sanitari esistenti", quantita: 1, prezzoUnitario: 150 },
-      { id: "v3", descrizione: "Manodopera idraulico", quantita: 16, prezzoUnitario: 38 },
-    ],
-    note: "Garanzia 24 mesi su materiali e installazione.",
-    ivaPercentuale: 22,
-    stato: "inviato",
-  },
-  {
-    id: "q3",
-    numero: "2025-003",
-    clienteId: "c3",
-    data: "2025-05-02",
-    titolo: "Ristrutturazione uffici",
-    descrizione: "Tinteggiatura e rifacimento pavimenti uffici 120mq.",
-    voci: [
-      { id: "v1", descrizione: "Tinteggiatura pareti e soffitti", quantita: 280, prezzoUnitario: 12 },
-      { id: "v2", descrizione: "Pavimento PVC effetto legno", quantita: 120, prezzoUnitario: 28 },
-      { id: "v3", descrizione: "Smaltimento materiali", quantita: 1, prezzoUnitario: 250 },
-    ],
-    note: "Tempi di esecuzione stimati: 10 giorni lavorativi.",
-    ivaPercentuale: 22,
-    stato: "bozza",
-  },
-  {
-    id: "q4",
-    numero: "2025-004",
-    clienteId: "c4",
-    data: "2025-03-18",
-    titolo: "Installazione caldaia a condensazione",
-    descrizione: "Fornitura e installazione caldaia a condensazione 24 kW con smontaggio della precedente.",
-    voci: [
-      { id: "v1", descrizione: "Caldaia a condensazione 24 kW", quantita: 1, prezzoUnitario: 1450 },
-      { id: "v2", descrizione: "Kit fumi e accessori", quantita: 1, prezzoUnitario: 180 },
-      { id: "v3", descrizione: "Manodopera installazione e collaudo", quantita: 8, prezzoUnitario: 40 },
-    ],
-    note: "Comprensivo di pratica ENEA per detrazione fiscale.",
-    ivaPercentuale: 22,
-    stato: "rifiutato",
-  },
-];
+type Row = {
+  id: string;
+  numero: string;
+  cliente_id: string | null;
+  data: string;
+  titolo: string;
+  descrizione: string;
+  voci: QuoteItem[] | null;
+  note: string;
+  iva_percentuale: number | string;
+  stato: QuoteStatus;
+};
 
-const STORAGE_KEY = "artigianoai:quotes";
+const rowToQuote = (r: Row): Quote => ({
+  id: r.id,
+  numero: r.numero ?? "",
+  clienteId: r.cliente_id ?? "",
+  data: r.data,
+  titolo: r.titolo ?? "",
+  descrizione: r.descrizione ?? "",
+  voci: (r.voci ?? []) as QuoteItem[],
+  note: r.note ?? "",
+  ivaPercentuale: typeof r.iva_percentuale === "string" ? parseFloat(r.iva_percentuale) : r.iva_percentuale,
+  stato: r.stato,
+});
 
-if (typeof window !== "undefined") {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) quotes = JSON.parse(raw);
-  } catch {}
-}
+const quoteToRow = (q: Omit<Quote, "id" | "numero">) => ({
+  cliente_id: q.clienteId || null,
+  data: q.data,
+  titolo: q.titolo,
+  descrizione: q.descrizione,
+  voci: q.voci as unknown as never,
+  note: q.note,
+  iva_percentuale: q.ivaPercentuale,
+  stato: q.stato,
+});
 
-function persist() {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(quotes));
-  } catch {}
-}
+let quotes: Quote[] = [];
+let loaded = false;
+let loading = false;
 
 const listeners = new Set<() => void>();
-const subscribe = (cb: () => void) => {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-};
-const emit = () => { persist(); listeners.forEach((l) => l()); };
+const subscribe = (cb: () => void) => { listeners.add(cb); return () => listeners.delete(cb); };
+const emit = () => listeners.forEach((l) => l());
 const getSnapshot = () => quotes;
 
-export function useQuotes() {
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+export async function loadQuotes() {
+  if (loading) return;
+  loading = true;
+  try {
+    const { data, error } = await supabase
+      .from("quotes")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("[quotes-store] load error:", error);
+      return;
+    }
+    quotes = (data ?? []).map((r) => rowToQuote(r as Row));
+    loaded = true;
+    emit();
+  } finally {
+    loading = false;
+  }
 }
 
-export function addQuote(data: Omit<Quote, "id" | "numero">) {
+if (typeof window !== "undefined") {
+  supabase.auth.getSession().then(({ data }) => {
+    if (data.session) loadQuotes();
+  });
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_OUT" || !session) {
+      quotes = [];
+      loaded = false;
+      emit();
+    } else if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+      loadQuotes();
+    }
+  });
+}
+
+export function useQuotes() {
+  const value = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  useEffect(() => {
+    if (!loaded && !loading) loadQuotes();
+  }, []);
+  return value;
+}
+
+function nextNumero(): string {
   const year = new Date().getFullYear();
   const sameYear = quotes.filter((q) => q.numero.startsWith(`${year}-`));
   const next = String(sameYear.length + 1).padStart(3, "0");
-  quotes = [{ ...data, id: `q${Date.now()}`, numero: `${year}-${next}` }, ...quotes];
+  return `${year}-${next}`;
+}
+
+export async function addQuote(data: Omit<Quote, "id" | "numero">) {
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return;
+  const numero = nextNumero();
+  const { data: row, error } = await supabase
+    .from("quotes")
+    .insert({ ...quoteToRow(data), numero, user_id: userData.user.id })
+    .select()
+    .single();
+  if (error || !row) {
+    console.error("[quotes-store] add error:", error);
+    return;
+  }
+  quotes = [rowToQuote(row as Row), ...quotes];
   emit();
 }
 
-export function updateQuote(id: string, data: Omit<Quote, "id" | "numero">) {
-  quotes = quotes.map((q) => (q.id === id ? { ...data, id, numero: q.numero } : q));
+export async function updateQuote(id: string, data: Omit<Quote, "id" | "numero">) {
+  const { data: row, error } = await supabase
+    .from("quotes")
+    .update(quoteToRow(data))
+    .eq("id", id)
+    .select()
+    .single();
+  if (error || !row) {
+    console.error("[quotes-store] update error:", error);
+    return;
+  }
+  quotes = quotes.map((q) => (q.id === id ? rowToQuote(row as Row) : q));
   emit();
 }
 
-export function setQuoteStatus(id: string, stato: QuoteStatus) {
-  quotes = quotes.map((q) => (q.id === id ? { ...q, stato } : q));
+export async function setQuoteStatus(id: string, stato: QuoteStatus) {
+  const { data: row, error } = await supabase
+    .from("quotes")
+    .update({ stato })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error || !row) {
+    console.error("[quotes-store] setStatus error:", error);
+    return;
+  }
+  quotes = quotes.map((q) => (q.id === id ? rowToQuote(row as Row) : q));
   emit();
 }
 
-export function deleteQuote(id: string) {
+export async function deleteQuote(id: string) {
+  const { error } = await supabase.from("quotes").delete().eq("id", id);
+  if (error) {
+    console.error("[quotes-store] delete error:", error);
+    return;
+  }
   quotes = quotes.filter((q) => q.id !== id);
   emit();
 }
