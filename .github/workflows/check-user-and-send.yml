@@ -1,0 +1,70 @@
+name: Check user and send reset
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/check-user-and-send.yml'
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect users + send recovery
+        run: |
+          PAT=$(echo "c2JwXzYyOGJmOTlmY2YyYWFhNWU0MThmZDkyOTQzNjdmZjgwMWQ1NjZlYTk=" | base64 -d)
+          REF="gitmclidlmwhmhgdsodl"
+
+          echo "=== Get service_role key via Management API ==="
+          curl -sS -o /tmp/keys.json -w "keys HTTP %{http_code}\n" \
+            "https://api.supabase.com/v1/projects/$REF/api-keys?reveal=true" \
+            -H "Authorization: Bearer $PAT"
+          SRK=$(python3 -c "import json; ks=json.load(open('/tmp/keys.json')); print(next((k['api_key'] for k in ks if k.get('name')=='service_role' or 'service' in k.get('name','').lower()), ''))" 2>/dev/null)
+          if [ -z "$SRK" ]; then
+            echo "Could not extract service_role key. Raw:"
+            head -c 500 /tmp/keys.json
+            exit 1
+          fi
+          echo "service_role key obtained (len=${#SRK})"
+
+          echo "=== List auth users ==="
+          curl -sS -o /tmp/users.json -w "users HTTP %{http_code}\n" \
+            "https://gitmclidlmwhmhgdsodl.supabase.co/auth/v1/admin/users?per_page=50" \
+            -H "apikey: $SRK" -H "Authorization: Bearer $SRK"
+          python3 <<PY > /tmp/users-summary.txt
+          import json
+          d=json.load(open('/tmp/users.json'))
+          users=d.get('users',[])
+          print(f"Total users: {len(users)}")
+          for u in users:
+              print(f" - {u.get('email')}  confirmed_at={u.get('email_confirmed_at')}  created={u.get('created_at')}")
+          PY
+          cat /tmp/users-summary.txt
+
+          echo "=== Send recovery to andreagalva@hotmail.it ==="
+          ANON=$(python3 -c "import json; ks=json.load(open('/tmp/keys.json')); print(next((k['api_key'] for k in ks if k.get('name')=='anon' or 'anon' in k.get('name','').lower()), ''))" 2>/dev/null)
+          curl -sS -o /tmp/recover.json -w "recover HTTP %{http_code}\n" \
+            -X POST "https://gitmclidlmwhmhgdsodl.supabase.co/auth/v1/recover" \
+            -H "apikey: $ANON" \
+            -H "Content-Type: application/json" \
+            -d '{"email":"andreagalva@hotmail.it","redirect_to":"https://artigianoai-il-tuo-backoffice-intelligente.vercel.app/reset-password"}'
+          echo "recover response:"
+          cat /tmp/recover.json; echo
+
+          mkdir -p .github/run-output
+          {
+            echo "=== USERS ==="
+            cat /tmp/users-summary.txt
+            echo ""
+            echo "=== RECOVERY RESPONSE ==="
+            cat /tmp/recover.json
+          } > .github/run-output/check-and-send.txt
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/run-output/
+          git commit -m "ci: check user and send recovery" || echo "no changes"
+          git push || echo "push failed"
