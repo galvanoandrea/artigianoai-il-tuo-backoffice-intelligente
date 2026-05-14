@@ -1,6 +1,0 @@
-HTTP 200
-"smtp_admin_email":"galvanoandrea012@gmail.com"
-"smtp_host":"smtp.gmail.com"
-"smtp_port":"465"
-"smtp_sender_name":"ArtigianoAI"
-"smtp_user":"galvanoandrea012@gmail.com"
