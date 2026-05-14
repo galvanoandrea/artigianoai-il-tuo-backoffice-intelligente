@@ -18,7 +18,10 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreVertical, Pencil, Trash2, Eye, Users, Mail, Phone, MapPin, FileText } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Plus, Search, MoreVertical, Pencil, Trash2, Eye, Users, Mail, Phone, MapPin, FileText, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   useClients, addClient, updateClient, deleteClient, type Client, type ClientStatus,
@@ -38,6 +41,7 @@ const statusVariant: Record<ClientStatus, { label: string; className: string }> 
 function ClientiPage() {
   const clients = useClients();
   const [search, setSearch] = useState("");
+  const [statoFilter, setStatoFilter] = useState<ClientStatus | "all">("all");
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
@@ -51,12 +55,16 @@ function ClientiPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return clients;
-    return clients.filter((c) =>
-      [c.ragioneSociale, c.referente, c.email, c.telefono, c.partitaIva]
-        .some((f) => f.toLowerCase().includes(q)),
-    );
-  }, [clients, search]);
+    return clients.filter((c) => {
+      if (statoFilter !== "all" && c.stato !== statoFilter) return false;
+      if (!q) return true;
+      return [c.ragioneSociale, c.referente, c.email, c.telefono, c.partitaIva]
+        .some((f) => f.toLowerCase().includes(q));
+    });
+  }, [clients, search, statoFilter]);
+
+  const hasFilters = !!search || statoFilter !== "all";
+  const clearFilters = () => { setSearch(""); setStatoFilter("all"); };
 
   const handleCreate = (data: Omit<Client, "id">) => {
     addClient(data);
@@ -94,14 +102,32 @@ function ClientiPage() {
         </Button>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Cerca per nome, referente, email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 h-11"
-        />
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Cerca per nome, referente, email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-11"
+          />
+        </div>
+        <Select value={statoFilter} onValueChange={(v) => setStatoFilter(v as ClientStatus | "all")}>
+          <SelectTrigger className="h-11 w-full sm:w-48">
+            <SelectValue placeholder="Stato" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tutti gli stati</SelectItem>
+            <SelectItem value="attivo">Attivo</SelectItem>
+            <SelectItem value="potenziale">Potenziale</SelectItem>
+            <SelectItem value="inattivo">Inattivo</SelectItem>
+          </SelectContent>
+        </Select>
+        {hasFilters && (
+          <Button variant="outline" onClick={clearFilters} className="h-11">
+            <X className="h-4 w-4" /> Pulisci
+          </Button>
+        )}
       </div>
 
       <Card>

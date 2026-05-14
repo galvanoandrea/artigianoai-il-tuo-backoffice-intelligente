@@ -1,11 +1,14 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
-import { Users, FileText, ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
+import { Users, FileText, ArrowRight, TrendingUp, TrendingDown, Calendar } from "lucide-react";
 import { useClients } from "@/lib/clients-store";
 import { useQuotes, calcTotals, formatEuro } from "@/lib/quotes-store";
 import { usePagamenti, formatEuroF } from "@/lib/fornitori-store";
@@ -58,12 +61,18 @@ function DashboardHome() {
   const clients = useClients();
   const quotes = useQuotes();
   const pagamenti = usePagamenti();
+  const [periodo, setPeriodo] = useState<"3" | "6" | "12" | "24">("12");
 
   const now = new Date();
   const attivi = clients.filter((c) => c.stato === "attivo").length;
 
+  // Distribuisce i mesi: metà prima, metà dopo
+  const totMesi = parseInt(periodo, 10);
+  const before = Math.floor(totMesi / 2);
+  const after = totMesi - before - 1;
+
   // ---- Entrate ----
-  const entrateKeys = buildMonthRange(now, 5, 6);
+  const entrateKeys = buildMonthRange(now, before, after);
 
   const entrateData = useMemo(() => {
     const map: Record<string, { accettato: number; inviato: number }> = {};
@@ -85,7 +94,7 @@ function DashboardHome() {
   }, [quotes, entrateKeys]);
 
   // ---- Uscite ----
-  const usciteKeys = buildMonthRange(now, 3, 8);
+  const usciteKeys = buildMonthRange(now, before, after);
 
   const usciteData = useMemo(() => {
     const map: Record<string, { da_pagare: number; pagato: number }> = {};
@@ -119,9 +128,23 @@ function DashboardHome() {
 
   return (
     <div className="space-y-6 p-4 sm:p-6 max-w-7xl mx-auto">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Panoramica</h1>
-        <p className="text-muted-foreground text-sm mt-1">Bentornato, ecco una sintesi della tua attività.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Panoramica</h1>
+          <p className="text-muted-foreground text-sm mt-1">Bentornato, ecco una sintesi della tua attività.</p>
+        </div>
+        <Select value={periodo} onValueChange={(v) => setPeriodo(v as typeof periodo)}>
+          <SelectTrigger className="h-11 w-full sm:w-44">
+            <Calendar className="h-4 w-4 mr-2" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="3">Ultimi 3 mesi</SelectItem>
+            <SelectItem value="6">Ultimi 6 mesi</SelectItem>
+            <SelectItem value="12">12 mesi</SelectItem>
+            <SelectItem value="24">24 mesi</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* KPI cards */}

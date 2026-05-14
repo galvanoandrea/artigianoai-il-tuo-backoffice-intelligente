@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import {
   Plus, Search, MoreVertical, Pencil, Trash2, CheckCircle2,
-  Wallet, Building2, Clock, TrendingDown,
+  Wallet, Building2, Clock, TrendingDown, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -65,6 +65,8 @@ function FornitoriPage() {
   const pagamenti = usePagamenti();
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("da_pagare");
+  const [fornitoreFilter, setFornitoreFilter] = useState<string>("all");
+  const [periodoFilter, setPeriodoFilter] = useState<string>("all");
 
   // fornitore dialog
   const [fOpen, setFOpen] = useState(false);
@@ -96,6 +98,20 @@ function FornitoriPage() {
   const totalePagato = pagati.reduce((s, p) => s + p.importo, 0);
 
   const pagamentiFiltered = (tab === "da_pagare" ? daPagare : pagati).filter((p) => {
+    if (fornitoreFilter !== "all" && p.fornitoreId !== fornitoreFilter) return false;
+    if (periodoFilter !== "all") {
+      const refDate = tab === "da_pagare" ? p.dataScadenza : p.dataPagamento;
+      if (!refDate) return false;
+      const now = new Date();
+      const ref = new Date(refDate);
+      const days = (ref.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+      if (periodoFilter === "scaduti" && days >= 0) return false;
+      if (periodoFilter === "settimana" && (days < 0 || days > 7)) return false;
+      if (periodoFilter === "mese" && (days < 0 || days > 31)) return false;
+      if (periodoFilter === "trimestre" && (days < 0 || days > 92)) return false;
+      if (periodoFilter === "ultimi30" && (days > 0 || days < -30)) return false;
+      if (periodoFilter === "ultimi90" && (days > 0 || days < -90)) return false;
+    }
     const q = search.toLowerCase();
     if (!q) return true;
     const f = fornitori.find((f) => f.id === p.fornitoreId);
@@ -104,6 +120,9 @@ function FornitoriPage() {
       (f?.ragioneSociale ?? "").toLowerCase().includes(q)
     );
   });
+
+  const hasFilters = !!search || fornitoreFilter !== "all" || periodoFilter !== "all";
+  const clearFilters = () => { setSearch(""); setFornitoreFilter("all"); setPeriodoFilter("all"); };
 
   const fornitoreNome = (id: string) =>
     fornitori.find((f) => f.id === id)?.ragioneSociale ?? "—";
@@ -221,15 +240,58 @@ function FornitoriPage() {
         </Card>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Cerca fornitore, descrizione, P.IVA..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
+      {/* Search + filtri */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Cerca fornitore, descrizione, P.IVA..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-11"
+          />
+        </div>
+        {tab !== "fornitori" && (
+          <>
+            <Select value={fornitoreFilter} onValueChange={setFornitoreFilter}>
+              <SelectTrigger className="h-11 w-full sm:w-52">
+                <SelectValue placeholder="Fornitore" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tutti i fornitori</SelectItem>
+                {fornitori.map((f) => (
+                  <SelectItem key={f.id} value={f.id}>{f.ragioneSociale}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={periodoFilter} onValueChange={setPeriodoFilter}>
+              <SelectTrigger className="h-11 w-full sm:w-44">
+                <SelectValue placeholder="Periodo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tutti i periodi</SelectItem>
+                {tab === "da_pagare" ? (
+                  <>
+                    <SelectItem value="scaduti">Scaduti</SelectItem>
+                    <SelectItem value="settimana">Prossimi 7 giorni</SelectItem>
+                    <SelectItem value="mese">Prossimo mese</SelectItem>
+                    <SelectItem value="trimestre">Prossimi 3 mesi</SelectItem>
+                  </>
+                ) : (
+                  <>
+                    <SelectItem value="ultimi30">Ultimi 30 giorni</SelectItem>
+                    <SelectItem value="ultimi90">Ultimi 90 giorni</SelectItem>
+                  </>
+                )}
+              </SelectContent>
+            </Select>
+          </>
+        )}
+        {hasFilters && (
+          <Button variant="outline" onClick={clearFilters} className="h-11">
+            <X className="h-4 w-4" /> Pulisci
+          </Button>
+        )}
       </div>
 
       {/* Tabs */}
