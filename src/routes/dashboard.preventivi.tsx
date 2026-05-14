@@ -20,7 +20,10 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
-  Plus, Search, MoreVertical, Pencil, Trash2, Eye, FileText, Printer,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Plus, Search, MoreVertical, Pencil, Trash2, Eye, FileText, Printer, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useClients } from "@/lib/clients-store";
@@ -54,6 +57,8 @@ function PreventiviPage() {
   const quotes = useQuotes();
   const clients = useClients();
   const [search, setSearch] = useState("");
+  const [statoFilter, setStatoFilter] = useState<QuoteStatus | "all">("all");
+  const [clienteFilter, setClienteFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<Quote | null>(null);
@@ -70,11 +75,18 @@ function PreventiviPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return quotes;
-    return quotes.filter((qt) =>
-      [qt.numero, qt.titolo, clientName(qt.clienteId)].some((f) => f.toLowerCase().includes(q)),
-    );
-  }, [quotes, search, clients]);
+    return quotes.filter((qt) => {
+      if (statoFilter !== "all" && qt.stato !== statoFilter) return false;
+      if (clienteFilter !== "all" && qt.clienteId !== clienteFilter) return false;
+      if (!q) return true;
+      return [qt.numero, qt.titolo, clientName(qt.clienteId)].some((f) =>
+        f.toLowerCase().includes(q),
+      );
+    });
+  }, [quotes, search, statoFilter, clienteFilter, clients]);
+
+  const hasFilters = !!search || statoFilter !== "all" || clienteFilter !== "all";
+  const clearFilters = () => { setSearch(""); setStatoFilter("all"); setClienteFilter("all"); };
 
   const handleCreate = (data: Omit<Quote, "id" | "numero">) => {
     addQuote(data);
@@ -119,14 +131,44 @@ function PreventiviPage() {
         </Button>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Cerca per numero, cliente, titolo..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 h-11"
-        />
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Cerca per numero, cliente, titolo..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-11"
+          />
+        </div>
+        <Select value={statoFilter} onValueChange={(v) => setStatoFilter(v as QuoteStatus | "all")}>
+          <SelectTrigger className="h-11 w-full sm:w-40">
+            <SelectValue placeholder="Stato" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tutti gli stati</SelectItem>
+            <SelectItem value="bozza">Bozza</SelectItem>
+            <SelectItem value="inviato">Inviato</SelectItem>
+            <SelectItem value="accettato">Accettato</SelectItem>
+            <SelectItem value="rifiutato">Rifiutato</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={clienteFilter} onValueChange={setClienteFilter}>
+          <SelectTrigger className="h-11 w-full sm:w-52">
+            <SelectValue placeholder="Cliente" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tutti i clienti</SelectItem>
+            {clients.map((c) => (
+              <SelectItem key={c.id} value={c.id}>{c.ragioneSociale}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {hasFilters && (
+          <Button variant="outline" onClick={clearFilters} className="h-11">
+            <X className="h-4 w-4" /> Pulisci
+          </Button>
+        )}
       </div>
 
       <Card>
