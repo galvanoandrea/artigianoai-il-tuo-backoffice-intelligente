@@ -1,11 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 
+const SUPABASE_URL = "https://gitmclidlmwhmhgdsodl.supabase.co";
+
 function getAdminClient() {
-  return createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY non configurata su Vercel");
+  }
+  return createClient(SUPABASE_URL, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
 async function getUserId(authHeader: string | undefined): Promise<string | null> {
