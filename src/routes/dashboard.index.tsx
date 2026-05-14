@@ -7,8 +7,9 @@ import {
 } from "@/components/ui/select";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell,
 } from "recharts";
-import { Users, FileText, ArrowRight, TrendingUp, TrendingDown, Calendar } from "lucide-react";
+import { Users, FileText, ArrowRight, TrendingUp, TrendingDown, Calendar, Target } from "lucide-react";
 import { useClients } from "@/lib/clients-store";
 import { useQuotes, calcTotals, formatEuro } from "@/lib/quotes-store";
 import { usePagamenti, formatEuroF } from "@/lib/fornitori-store";
@@ -126,6 +127,42 @@ function DashboardHome() {
     .filter((p) => p.stato === "da_pagare")
     .reduce((s, p) => s + p.importo, 0);
 
+  // ---- Andamento annuo (anno corrente) ----
+  const annoCorrente = now.getFullYear();
+
+  const annualeEntrate = useMemo(() => {
+    const acc = { accettato: 0, inviato: 0, bozza: 0, rifiutato: 0 };
+    quotes.forEach((q) => {
+      if (new Date(q.data).getFullYear() !== annoCorrente) return;
+      const { totale } = calcTotals(q.voci, q.ivaPercentuale);
+      acc[q.stato] += totale;
+    });
+    const data = [
+      { name: "Accettati", value: Math.round(acc.accettato), fill: "#10b981" },
+      { name: "In sospeso", value: Math.round(acc.inviato), fill: "#f59e0b" },
+      { name: "Bozze", value: Math.round(acc.bozza), fill: "#94a3b8" },
+      { name: "Rifiutati", value: Math.round(acc.rifiutato), fill: "#f87171" },
+    ].filter((d) => d.value > 0);
+    return data;
+  }, [quotes, annoCorrente]);
+
+  const annualeUscite = useMemo(() => {
+    const acc = { pagato: 0, da_pagare: 0 };
+    pagamenti.forEach((p) => {
+      const dateStr = p.stato === "da_pagare" ? p.dataScadenza : (p.dataPagamento ?? p.dataScadenza);
+      if (new Date(dateStr).getFullYear() !== annoCorrente) return;
+      acc[p.stato] += p.importo;
+    });
+    const data = [
+      { name: "Pagate", value: Math.round(acc.pagato), fill: "#94a3b8" },
+      { name: "Da pagare", value: Math.round(acc.da_pagare), fill: "#f97316" },
+    ].filter((d) => d.value > 0);
+    return data;
+  }, [pagamenti, annoCorrente]);
+
+  const totEntrateAnno = annualeEntrate.reduce((s, d) => s + d.value, 0);
+  const totUsciteAnno = annualeUscite.reduce((s, d) => s + d.value, 0);
+
   return (
     <div className="space-y-6 p-4 sm:p-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -201,6 +238,116 @@ function DashboardHome() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Grafico Andamento Annuo */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Target className="h-4 w-4 text-accent" />
+            Andamento annuo {annoCorrente}
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Distribuzione entrate e uscite dell'anno in corso per stato
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {/* Donut entrate */}
+            <div className="flex flex-col items-center gap-3">
+              <p className="text-sm font-medium">Preventivi ({annoCorrente})</p>
+              {annualeEntrate.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-8">Nessun dato</p>
+              ) : (
+                <>
+                  <div className="relative">
+                    <ResponsiveContainer width={200} height={200}>
+                      <PieChart>
+                        <Pie
+                          data={annualeEntrate}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={58}
+                          outerRadius={88}
+                          paddingAngle={3}
+                          dataKey="value"
+                        >
+                          {annualeEntrate.map((entry, i) => (
+                            <Cell key={i} fill={entry.fill} stroke="transparent" />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(v: number) => formatEuro(v)}
+                          contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span className="text-xs text-muted-foreground">Totale</span>
+                      <span className="text-sm font-bold">{formatEuro(totEntrateAnno)}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+                    {annualeEntrate.map((d) => (
+                      <div key={d.name} className="flex items-center gap-1.5 text-xs">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: d.fill }} />
+                        <span className="text-muted-foreground">{d.name}</span>
+                        <span className="font-medium">{formatEuro(d.value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Donut uscite */}
+            <div className="flex flex-col items-center gap-3">
+              <p className="text-sm font-medium">Pagamenti fornitori ({annoCorrente})</p>
+              {annualeUscite.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-8">Nessun dato</p>
+              ) : (
+                <>
+                  <div className="relative">
+                    <ResponsiveContainer width={200} height={200}>
+                      <PieChart>
+                        <Pie
+                          data={annualeUscite}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={58}
+                          outerRadius={88}
+                          paddingAngle={3}
+                          dataKey="value"
+                        >
+                          {annualeUscite.map((entry, i) => (
+                            <Cell key={i} fill={entry.fill} stroke="transparent" />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(v: number) => formatEuro(v)}
+                          contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span className="text-xs text-muted-foreground">Totale</span>
+                      <span className="text-sm font-bold">{formatEuro(totUsciteAnno)}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+                    {annualeUscite.map((d) => (
+                      <div key={d.name} className="flex items-center gap-1.5 text-xs">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: d.fill }} />
+                        <span className="text-muted-foreground">{d.name}</span>
+                        <span className="font-medium">{formatEuro(d.value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Grafico Entrate */}
       <Card>

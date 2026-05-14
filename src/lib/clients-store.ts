@@ -61,12 +61,28 @@ let clients: Client[] = [
   },
 ];
 
+const STORAGE_KEY = "artigianoai:clients";
+
+if (typeof window !== "undefined") {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) clients = JSON.parse(raw);
+  } catch {}
+}
+
+function persist() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+  } catch {}
+}
+
 const listeners = new Set<() => void>();
 const subscribe = (cb: () => void) => {
   listeners.add(cb);
   return () => listeners.delete(cb);
 };
-const emit = () => listeners.forEach((l) => l());
+const emit = () => { persist(); listeners.forEach((l) => l()); };
 const getSnapshot = () => clients;
 
 export function useClients() {

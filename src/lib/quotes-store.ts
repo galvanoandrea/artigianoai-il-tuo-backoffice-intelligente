@@ -89,12 +89,28 @@ let quotes: Quote[] = [
   },
 ];
 
+const STORAGE_KEY = "artigianoai:quotes";
+
+if (typeof window !== "undefined") {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) quotes = JSON.parse(raw);
+  } catch {}
+}
+
+function persist() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(quotes));
+  } catch {}
+}
+
 const listeners = new Set<() => void>();
 const subscribe = (cb: () => void) => {
   listeners.add(cb);
   return () => listeners.delete(cb);
 };
-const emit = () => listeners.forEach((l) => l());
+const emit = () => { persist(); listeners.forEach((l) => l()); };
 const getSnapshot = () => quotes;
 
 export function useQuotes() {

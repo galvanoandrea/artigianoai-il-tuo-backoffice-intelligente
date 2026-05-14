@@ -77,13 +77,34 @@ let pagamenti: Pagamento[] = [
   },
 ];
 
+const STORAGE_KEY_F = "artigianoai:fornitori";
+const STORAGE_KEY_P = "artigianoai:pagamenti";
+
+if (typeof window !== "undefined") {
+  try {
+    const rawF = window.localStorage.getItem(STORAGE_KEY_F);
+    if (rawF) fornitori = JSON.parse(rawF);
+    const rawP = window.localStorage.getItem(STORAGE_KEY_P);
+    if (rawP) pagamenti = JSON.parse(rawP);
+  } catch {}
+}
+
+function persistF() {
+  if (typeof window === "undefined") return;
+  try { window.localStorage.setItem(STORAGE_KEY_F, JSON.stringify(fornitori)); } catch {}
+}
+function persistP() {
+  if (typeof window === "undefined") return;
+  try { window.localStorage.setItem(STORAGE_KEY_P, JSON.stringify(pagamenti)); } catch {}
+}
+
 const fornitoriListeners = new Set<() => void>();
 const pagamentiListeners = new Set<() => void>();
 
 const subscribeF = (cb: () => void) => { fornitoriListeners.add(cb); return () => fornitoriListeners.delete(cb); };
 const subscribeP = (cb: () => void) => { pagamentiListeners.add(cb); return () => pagamentiListeners.delete(cb); };
-const emitF = () => fornitoriListeners.forEach((l) => l());
-const emitP = () => pagamentiListeners.forEach((l) => l());
+const emitF = () => { persistF(); fornitoriListeners.forEach((l) => l()); };
+const emitP = () => { persistP(); pagamentiListeners.forEach((l) => l()); };
 const getSnapshotF = () => fornitori;
 const getSnapshotP = () => pagamenti;
 
