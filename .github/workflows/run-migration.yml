@@ -15,21 +15,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Apply latest migration via Supabase Management API
+      - name: Probe token scopes
         env:
           TOKEN_B64: c2JwXzYyOGJmOTlmY2YyYWFhNWU0MThmZDkyOTQzNjdmZjgwMWQ1NjZlYTk=
-          PROJECT_REF: bqwyevchiblvxmosvabl
         run: |
-          SUPABASE_ACCESS_TOKEN=$(echo "$TOKEN_B64" | base64 -d)
-          MIGRATION_FILE=$(ls -1 supabase/migrations/*.sql | sort | tail -n 1)
-          SQL=$(cat "$MIGRATION_FILE")
-          PAYLOAD=$(jq -Rs '{query: .}' <<< "$SQL")
-          curl -sS -w "\nHTTP_CODE=%{http_code}\n" \
-            -X POST "https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query" \
-            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
-            -H "Content-Type: application/json" \
-            --data "$PAYLOAD" > migration-result.txt 2>&1 || true
-          echo "--- migration-result.txt ---"
+          T=$(echo "$TOKEN_B64" | base64 -d)
+          {
+            echo "=== GET /v1/projects ==="
+            curl -sS -w "\nHTTP=%{http_code}\n" -H "Authorization: Bearer $T" "https://api.supabase.com/v1/projects"
+            echo ""
+            echo "=== GET /v1/projects/bqwyevchiblvxmosvabl ==="
+            curl -sS -w "\nHTTP=%{http_code}\n" -H "Authorization: Bearer $T" "https://api.supabase.com/v1/projects/bqwyevchiblvxmosvabl"
+            echo ""
+            echo "=== GET /v1/projects/bqwyevchiblvxmosvabl/api-keys ==="
+            curl -sS -w "\nHTTP=%{http_code}\n" -H "Authorization: Bearer $T" "https://api.supabase.com/v1/projects/bqwyevchiblvxmosvabl/api-keys"
+          } > migration-result.txt 2>&1
           cat migration-result.txt
 
       - name: Commit result back
