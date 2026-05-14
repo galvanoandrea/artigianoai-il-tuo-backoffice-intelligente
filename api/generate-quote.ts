@@ -1,11 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL =
-  process.env.SUPABASE_URL || "https://bqwyevchiblvxmosvabl.supabase.co";
+const SUPABASE_URL = "https://gitmclidlmwhmhgdsodl.supabase.co";
 const SUPABASE_ANON_KEY =
-  process.env.SUPABASE_PUBLISHABLE_KEY ||
-  process.env.SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxd3lldmNoaWJsdnhtb3N2YWJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NDU5MTAsImV4cCI6MjA5NDAyMTkxMH0.fvL0BNrDgMVZjjDdEVszIk_58-APCbkQzpj9N52E-80";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpdG1jbGlkbG13aG1oZ2Rzb2RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NzI3NDAsImV4cCI6MjA5NDI0ODc0MH0.t2go1ZyIrvK52uFOpHfjCTfHQIAVk097HWn4IFfLH9E";
 
 async function getUserId(authHeader: string | undefined): Promise<string | null> {
   if (!authHeader?.startsWith("Bearer ")) return null;
