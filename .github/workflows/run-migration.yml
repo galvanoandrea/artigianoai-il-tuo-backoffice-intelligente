@@ -6,6 +6,9 @@ on:
       - 'supabase/migrations/**'
       - '.github/workflows/run-migration.yml'
 
+permissions:
+  contents: write
+
 jobs:
   apply-migration:
     runs-on: ubuntu-latest
