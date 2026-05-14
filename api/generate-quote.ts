@@ -71,7 +71,16 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const candidates = process.env.GEMINI_MODEL
+      ? [process.env.GEMINI_MODEL]
+      : [
+          "gemini-2.5-flash",
+          "gemini-2.0-flash",
+          "gemini-flash-latest",
+          "gemini-2.0-flash-001",
+          "gemini-1.5-flash-latest",
+          "gemini-pro-latest",
+        ];
     const body = {
       systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
       contents: [{ role: "user", parts: [{ text: descrizione }] }],
@@ -81,21 +90,57 @@ export default async function handler(req: any, res: any) {
       },
     };
 
-    const resp = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    let resp: Response | null = null;
+    let lastErr = "";
+    let usedModel = "";
+    for (const m of candidates) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`;
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (r.ok) {
+        resp = r;
+        usedModel = m;
+        break;
+      }
+      if (r.status !== 404) {
+        resp = r;
+        usedModel = m;
+        break;
+      }
+      lastErr = (await r.text()).slice(0, 200);
+    }
 
-    if (!resp.ok) {
-      const errText = await resp.text();
-      console.error("[generate-quote] Gemini error", resp.status, errText);
+    if (!resp || !resp.ok) {
+      const status = resp?.status ?? 404;
+      let detail = resp ? (await resp.text()).slice(0, 500) : lastErr;
+      if (status === 404) {
+        try {
+          const listResp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+          );
+          if (listResp.ok) {
+            const list: any = await listResp.json();
+            const names = (list?.models ?? [])
+              .filter((mm: any) => mm?.supportedGenerationMethods?.includes("generateContent"))
+              .map((mm: any) => mm?.name?.replace(/^models\//, ""))
+              .filter(Boolean)
+              .slice(0, 20)
+              .join(", ");
+            detail = `Nessun modello tra [${candidates.join(", ")}] disponibile. Disponibili sulla tua key: ${names || "(nessuno)"}`;
+          }
+        } catch { /* noop */ }
+      }
+      console.error("[generate-quote] Gemini error", status, detail);
       return res.status(502).json({
-        error: `Gemini ha risposto ${resp.status}`,
-        detail: errText.slice(0, 500),
+        error: `Gemini ha risposto ${status}`,
+        detail,
       });
     }
 
+    console.log("[generate-quote] Using model", usedModel);
     const data: any = await resp.json();
     const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
     if (!text) {
