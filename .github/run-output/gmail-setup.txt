@@ -1,8 +1,0 @@
-=== SMTP TEST ===
-SMTP_OK
-
-=== SUPABASE PATCH HTTP 200 ===
-"smtp_admin_email":"andreagalva9@gmail.com"
-"smtp_host":"smtp.gmail.com"
-"smtp_port":"465"
-"smtp_sender_name":"ArtigianoAI"
