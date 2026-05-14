@@ -1,0 +1,85 @@
+name: Apply profiles migration
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/apply-profiles-migration.yml'
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply migration
+        run: |
+          PAT=$(echo "c2JwXzYyOGJmOTlmY2YyYWFhNWU0MThmZDkyOTQzNjdmZjgwMWQ1NjZlYTk=" | base64 -d)
+          REF="gitmclidlmwhmhgdsodl"
+
+          python3 > /tmp/migration.sql <<'PYEOF'
+          print("""
+          CREATE TABLE IF NOT EXISTS public.profiles (
+            id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+            nome TEXT,
+            cognome TEXT,
+            nome_completo TEXT,
+            nome_azienda TEXT,
+            telefono TEXT,
+            indirizzo TEXT,
+            partita_iva TEXT,
+            codice_fiscale TEXT,
+            iban TEXT,
+            logo_url TEXT,
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          );
+
+          ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+          DROP POLICY IF EXISTS "profiles_select_own" ON public.profiles;
+          DROP POLICY IF EXISTS "profiles_insert_own" ON public.profiles;
+          DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
+
+          CREATE POLICY "profiles_select_own" ON public.profiles FOR SELECT USING (auth.uid() = id);
+          CREATE POLICY "profiles_insert_own" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+          CREATE POLICY "profiles_update_own" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+
+          CREATE OR REPLACE FUNCTION public.handle_new_user()
+          RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+          AS $$
+          BEGIN
+            INSERT INTO public.profiles (id) VALUES (NEW.id) ON CONFLICT (id) DO NOTHING;
+            RETURN NEW;
+          END;
+          $$;
+
+          DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+          CREATE TRIGGER on_auth_user_created
+            AFTER INSERT ON auth.users
+            FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+          INSERT INTO public.profiles (id)
+          SELECT id FROM auth.users
+          ON CONFLICT (id) DO NOTHING;
+          """)
+          PYEOF
+
+          MIG_SQL=$(cat /tmp/migration.sql)
+          jq -n --arg q "$MIG_SQL" '{query: $q}' > /tmp/body.json
+          HTTP=$(curl -sS -o /tmp/result.json -w "%{http_code}" \
+            -X POST "https://api.supabase.com/v1/projects/$REF/database/query" \
+            -H "Authorization: Bearer $PAT" \
+            -H "Content-Type: application/json" \
+            --data @/tmp/body.json)
+          echo "HTTP $HTTP"
+          cat /tmp/result.json; echo
+
+          mkdir -p .github/run-output
+          { echo "HTTP $HTTP"; cat /tmp/result.json; } > .github/run-output/profiles-migration.txt
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/run-output/
+          git commit -m "ci: profiles migration result" || echo "no changes"
+          git push || echo "push failed"

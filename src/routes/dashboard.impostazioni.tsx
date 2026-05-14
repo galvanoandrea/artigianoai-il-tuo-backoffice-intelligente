@@ -74,15 +74,15 @@ function ImpostazioniPage() {
     const nome_completo = `${form.nome} ${form.cognome}`.trim();
     const { error } = await supabase
       .from("profiles")
-      .update({
+      .upsert({
+        id: user.id,
         nome: form.nome.trim() || null,
         cognome: form.cognome.trim() || null,
         nome_completo: nome_completo || null,
         nome_azienda: form.nome_azienda.trim() || null,
         telefono: form.telefono.trim() || null,
         indirizzo: form.indirizzo.trim() || null,
-      })
-      .eq("id", user.id);
+      });
     setSaving(false);
     if (error) {
       toast.error("Errore nel salvataggio");
