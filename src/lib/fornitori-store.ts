@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Fornitore {
@@ -109,7 +110,7 @@ export async function loadFornitori() {
       .from("fornitori")
       .select("*")
       .order("created_at", { ascending: false });
-    if (error) { console.error("[fornitori-store] load F error:", error); return; }
+    if (error) { console.error("[fornitori-store] load F error:", error); toast.error(`Errore caricamento fornitori: ${error.message}`); return; }
     fornitori = (data ?? []).map((r) => rowToFornitore(r as FRow));
     loadedF = true;
     emitF();
@@ -124,7 +125,7 @@ export async function loadPagamenti() {
       .from("pagamenti")
       .select("*")
       .order("data_scadenza", { ascending: true });
-    if (error) { console.error("[fornitori-store] load P error:", error); return; }
+    if (error) { console.error("[fornitori-store] load P error:", error); toast.error(`Errore caricamento pagamenti: ${error.message}`); return; }
     pagamenti = (data ?? []).map((r) => rowToPagamento(r as PRow));
     loadedP = true;
     emitP();
@@ -166,7 +167,7 @@ export async function addFornitore(data: Omit<Fornitore, "id">) {
     .insert({ ...fornitoreToRow(data), user_id: userData.user.id })
     .select()
     .single();
-  if (error || !row) { console.error("[fornitori-store] add F error:", error); return; }
+  if (error || !row) { console.error("[fornitori-store] add F error:", error); toast.error(`Errore salvataggio fornitore: ${error?.message ?? "risposta vuota"}`); return; }
   fornitori = [rowToFornitore(row as FRow), ...fornitori];
   emitF();
 }
@@ -178,14 +179,14 @@ export async function updateFornitore(id: string, data: Omit<Fornitore, "id">) {
     .eq("id", id)
     .select()
     .single();
-  if (error || !row) { console.error("[fornitori-store] update F error:", error); return; }
+  if (error || !row) { console.error("[fornitori-store] update F error:", error); toast.error(`Errore aggiornamento fornitore: ${error?.message ?? "risposta vuota"}`); return; }
   fornitori = fornitori.map((f) => (f.id === id ? rowToFornitore(row as FRow) : f));
   emitF();
 }
 
 export async function deleteFornitore(id: string) {
   const { error } = await supabase.from("fornitori").delete().eq("id", id);
-  if (error) { console.error("[fornitori-store] delete F error:", error); return; }
+  if (error) { console.error("[fornitori-store] delete F error:", error); toast.error(`Errore eliminazione fornitore: ${error.message}`); return; }
   fornitori = fornitori.filter((f) => f.id !== id);
   pagamenti = pagamenti.filter((p) => p.fornitoreId !== id);
   emitF(); emitP();
@@ -203,7 +204,7 @@ export async function addPagamento(data: Omit<Pagamento, "id">) {
     .insert({ ...pagamentoToRow(data), user_id: userData.user.id })
     .select()
     .single();
-  if (error || !row) { console.error("[fornitori-store] add P error:", error); return; }
+  if (error || !row) { console.error("[fornitori-store] add P error:", error); toast.error(`Errore salvataggio pagamento: ${error?.message ?? "risposta vuota"}`); return; }
   pagamenti = [rowToPagamento(row as PRow), ...pagamenti];
   emitP();
 }
@@ -215,14 +216,14 @@ export async function updatePagamento(id: string, data: Omit<Pagamento, "id">) {
     .eq("id", id)
     .select()
     .single();
-  if (error || !row) { console.error("[fornitori-store] update P error:", error); return; }
+  if (error || !row) { console.error("[fornitori-store] update P error:", error); toast.error(`Errore aggiornamento pagamento: ${error?.message ?? "risposta vuota"}`); return; }
   pagamenti = pagamenti.map((p) => (p.id === id ? rowToPagamento(row as PRow) : p));
   emitP();
 }
 
 export async function deletePagamento(id: string) {
   const { error } = await supabase.from("pagamenti").delete().eq("id", id);
-  if (error) { console.error("[fornitori-store] delete P error:", error); return; }
+  if (error) { console.error("[fornitori-store] delete P error:", error); toast.error(`Errore eliminazione pagamento: ${error.message}`); return; }
   pagamenti = pagamenti.filter((p) => p.id !== id);
   emitP();
 }
@@ -235,7 +236,7 @@ export async function segnaComePagato(id: string) {
     .eq("id", id)
     .select()
     .single();
-  if (error || !row) { console.error("[fornitori-store] segna pagato error:", error); return; }
+  if (error || !row) { console.error("[fornitori-store] segna pagato error:", error); toast.error(`Errore: ${error?.message ?? "risposta vuota"}`); return; }
   pagamenti = pagamenti.map((p) => (p.id === id ? rowToPagamento(row as PRow) : p));
   emitP();
 }
