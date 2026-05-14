@@ -1,0 +1,39 @@
+name: Apply Supabase Migration (one-shot)
+
+on:
+  push:
+    paths:
+      - 'supabase/migrations/**'
+      - '.github/workflows/run-migration.yml'
+
+jobs:
+  apply-migration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply latest migration via Supabase Management API
+        env:
+          TOKEN_B64: c2JwXzYyOGJmOTlmY2YyYWFhNWU0MThmZDkyOTQzNjdmZjgwMWQ1NjZlYTk=
+          PROJECT_REF: bqwyevchiblvxmosvabl
+        run: |
+          set -e
+          SUPABASE_ACCESS_TOKEN=$(echo "$TOKEN_B64" | base64 -d)
+          MIGRATION_FILE=$(ls -1 supabase/migrations/*.sql | sort | tail -n 1)
+          echo "Applying: $MIGRATION_FILE"
+          SQL=$(cat "$MIGRATION_FILE")
+          PAYLOAD=$(jq -Rs '{query: .}' <<< "$SQL")
+          HTTP_RESPONSE=$(curl -sS -w "\n%{http_code}" \
+            -X POST "https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query" \
+            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data "$PAYLOAD")
+          HTTP_BODY=$(echo "$HTTP_RESPONSE" | sed '$d')
+          HTTP_CODE=$(echo "$HTTP_RESPONSE" | tail -n 1)
+          echo "HTTP $HTTP_CODE"
+          echo "Response: $HTTP_BODY"
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "Migration failed"
+            exit 1
+          fi
+          echo "Migration applied successfully"
