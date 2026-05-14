@@ -1,2 +1,11 @@
+=== GET /v1/projects ===
+[{"id":"gitmclidlmwhmhgdsodl","ref":"gitmclidlmwhmhgdsodl","organization_id":"ekcdbktvonqtxxrenqcy","organization_slug":"ekcdbktvonqtxxrenqcy","name":"ArtigianoAI","region":"eu-west-1","status":"ACTIVE_HEALTHY","database":{"host":"db.gitmclidlmwhmhgdsodl.supabase.co","version":"17.6.1.121","postgres_engine":"17","release_channel":"ga"},"created_at":"2026-05-13T11:45:40.784537Z"}]
+HTTP=200
+
+=== GET /v1/projects/bqwyevchiblvxmosvabl ===
 {"message":"Your account does not have the necessary privileges to access this endpoint. For more details, refer to our documentation https://supabase.com/docs/guides/platform/access-control"}
-HTTP_CODE=403
+HTTP=403
+
+=== GET /v1/projects/bqwyevchiblvxmosvabl/api-keys ===
+{"message":"Your account does not have the necessary privileges to access this endpoint. For more details, refer to our documentation https://supabase.com/docs/guides/platform/access-control"}
+HTTP=403
