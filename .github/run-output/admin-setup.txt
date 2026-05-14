@@ -1,7 +1,0 @@
-=== USER ID ===
-42336ea1-6496-4722-9d12-fa9e58487d48
-
-=== VERIFY ===
-{"message":"Failed to run sql query: ERROR:  42702: column reference \"role\" is ambiguous\nLINE 1: SELECT email, role FROM auth.users u JOIN public.user_roles r ON r.user_id=u.id WHERE u.email='andreagalva@hotmail.it';\n                      ^\n"}
-=== SERVICE_ROLE_KEY (per Vercel) ===
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpdG1jbGlkbG13aG1oZ2Rzb2RsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODY3Mjc0MCwiZXhwIjoyMDk0MjQ4NzQwfQ.uFf6cCdSgfnSw72TWpMu4z2ySfj11ivn0NGGZxoxBHw
