@@ -17,9 +17,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardPreventiviRouteImport } from './routes/dashboard.preventivi'
 import { Route as DashboardImpostazioniRouteImport } from './routes/dashboard.impostazioni'
+import { Route as DashboardFornitoriRouteImport } from './routes/dashboard.fornitori'
 import { Route as DashboardClientiRouteImport } from './routes/dashboard.clienti'
 import { Route as DashboardAdminRouteImport } from './routes/dashboard.admin'
-import { Route as DashboardFornitoriRouteImport } from './routes/dashboard.fornitori'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -61,6 +61,11 @@ const DashboardImpostazioniRoute = DashboardImpostazioniRouteImport.update({
   path: '/impostazioni',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardFornitoriRoute = DashboardFornitoriRouteImport.update({
+  id: '/fornitori',
+  path: '/fornitori',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardClientiRoute = DashboardClientiRouteImport.update({
   id: '/clienti',
   path: '/clienti',
@@ -69,11 +74,6 @@ const DashboardClientiRoute = DashboardClientiRouteImport.update({
 const DashboardAdminRoute = DashboardAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardFornitoriRoute = DashboardFornitoriRouteImport.update({
-  id: '/fornitori',
-  path: '/fornitori',
   getParentRoute: () => DashboardRoute,
 } as any)
 
@@ -223,6 +223,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardImpostazioniRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/fornitori': {
+      id: '/dashboard/fornitori'
+      path: '/fornitori'
+      fullPath: '/dashboard/fornitori'
+      preLoaderRoute: typeof DashboardFornitoriRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/clienti': {
       id: '/dashboard/clienti'
       path: '/clienti'
@@ -235,13 +242,6 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/dashboard/admin'
       preLoaderRoute: typeof DashboardAdminRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/fornitori': {
-      id: '/dashboard/fornitori'
-      path: '/fornitori'
-      fullPath: '/dashboard/fornitori'
-      preLoaderRoute: typeof DashboardFornitoriRouteImport
       parentRoute: typeof DashboardRoute
     }
   }
@@ -279,3 +279,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

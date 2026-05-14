@@ -74,6 +74,196 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          id: string
+          user_id: string
+          ragione_sociale: string
+          referente: string
+          telefono: string
+          email: string
+          indirizzo: string
+          partita_iva: string
+          note: string
+          stato: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          ragione_sociale?: string
+          referente?: string
+          telefono?: string
+          email?: string
+          indirizzo?: string
+          partita_iva?: string
+          note?: string
+          stato?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          ragione_sociale?: string
+          referente?: string
+          telefono?: string
+          email?: string
+          indirizzo?: string
+          partita_iva?: string
+          note?: string
+          stato?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      fornitori: {
+        Row: {
+          id: string
+          user_id: string
+          ragione_sociale: string
+          referente: string
+          telefono: string
+          email: string
+          partita_iva: string
+          note: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          ragione_sociale?: string
+          referente?: string
+          telefono?: string
+          email?: string
+          partita_iva?: string
+          note?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          ragione_sociale?: string
+          referente?: string
+          telefono?: string
+          email?: string
+          partita_iva?: string
+          note?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      quotes: {
+        Row: {
+          id: string
+          user_id: string
+          numero: string
+          cliente_id: string | null
+          data: string
+          titolo: string
+          descrizione: string
+          voci: Json
+          note: string
+          iva_percentuale: number
+          stato: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          numero?: string
+          cliente_id?: string | null
+          data?: string
+          titolo?: string
+          descrizione?: string
+          voci?: Json
+          note?: string
+          iva_percentuale?: number
+          stato?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          numero?: string
+          cliente_id?: string | null
+          data?: string
+          titolo?: string
+          descrizione?: string
+          voci?: Json
+          note?: string
+          iva_percentuale?: number
+          stato?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pagamenti: {
+        Row: {
+          id: string
+          user_id: string
+          fornitore_id: string | null
+          descrizione: string
+          importo: number
+          data_scadenza: string
+          data_pagamento: string | null
+          stato: string
+          note: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          fornitore_id?: string | null
+          descrizione?: string
+          importo?: number
+          data_scadenza?: string
+          data_pagamento?: string | null
+          stato?: string
+          note?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          fornitore_id?: string | null
+          descrizione?: string
+          importo?: number
+          data_scadenza?: string
+          data_pagamento?: string | null
+          stato?: string
+          note?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagamenti_fornitore_id_fkey"
+            columns: ["fornitore_id"]
+            isOneToOne: false
+            referencedRelation: "fornitori"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,4 +1,5 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface Fornitore {
   id: string;
@@ -23,140 +24,219 @@ export interface Pagamento {
   note: string;
 }
 
-let fornitori: Fornitore[] = [
-  {
-    id: "f1",
-    ragioneSociale: "Ferramenta Lombardi",
-    referente: "Giovanni Lombardi",
-    telefono: "+39 02 3456789",
-    email: "info@ferramantalombardi.it",
-    partitaIva: "IT11223344556",
-    note: "Fornitore principale materiali edili.",
-  },
-  {
-    id: "f2",
-    ragioneSociale: "Elettro Supply S.r.l.",
-    referente: "Carla Ricci",
-    telefono: "+39 011 9876543",
-    email: "ordini@elettrosupply.it",
-    partitaIva: "IT99887766554",
-    note: "Componenti elettrici e cavi.",
-  },
-];
+type FRow = {
+  id: string;
+  ragione_sociale: string;
+  referente: string;
+  telefono: string;
+  email: string;
+  partita_iva: string;
+  note: string;
+};
 
-let pagamenti: Pagamento[] = [
-  {
-    id: "p1",
-    fornitoreId: "f1",
-    descrizione: "Fornitura mattoni e cemento — cantiere Via Roma",
-    importo: 2400,
-    dataScadenza: "2026-06-15",
-    dataPagamento: "",
-    stato: "da_pagare",
-    note: "Fattura n. 2026/043",
-  },
-  {
-    id: "p2",
-    fornitoreId: "f1",
-    descrizione: "Piastrelle bagno — ordine marzo",
-    importo: 1850,
-    dataScadenza: "2026-05-01",
-    dataPagamento: "2026-05-02",
-    stato: "pagato",
-    note: "",
-  },
-  {
-    id: "p3",
-    fornitoreId: "f2",
-    descrizione: "Cavi MT + quadro elettrico",
-    importo: 3200,
-    dataScadenza: "2026-07-30",
-    dataPagamento: "",
-    stato: "da_pagare",
-    note: "Pagamento 30gg dalla consegna",
-  },
-];
+type PRow = {
+  id: string;
+  fornitore_id: string | null;
+  descrizione: string;
+  importo: number | string;
+  data_scadenza: string;
+  data_pagamento: string | null;
+  stato: PagamentoStato;
+  note: string;
+};
 
-const STORAGE_KEY_F = "artigianoai:fornitori";
-const STORAGE_KEY_P = "artigianoai:pagamenti";
+const rowToFornitore = (r: FRow): Fornitore => ({
+  id: r.id,
+  ragioneSociale: r.ragione_sociale ?? "",
+  referente: r.referente ?? "",
+  telefono: r.telefono ?? "",
+  email: r.email ?? "",
+  partitaIva: r.partita_iva ?? "",
+  note: r.note ?? "",
+});
+
+const fornitoreToRow = (f: Omit<Fornitore, "id">) => ({
+  ragione_sociale: f.ragioneSociale,
+  referente: f.referente,
+  telefono: f.telefono,
+  email: f.email,
+  partita_iva: f.partitaIva,
+  note: f.note,
+});
+
+const rowToPagamento = (r: PRow): Pagamento => ({
+  id: r.id,
+  fornitoreId: r.fornitore_id ?? "",
+  descrizione: r.descrizione ?? "",
+  importo: typeof r.importo === "string" ? parseFloat(r.importo) : r.importo,
+  dataScadenza: r.data_scadenza,
+  dataPagamento: r.data_pagamento ?? "",
+  stato: r.stato,
+  note: r.note ?? "",
+});
+
+const pagamentoToRow = (p: Omit<Pagamento, "id">) => ({
+  fornitore_id: p.fornitoreId || null,
+  descrizione: p.descrizione,
+  importo: p.importo,
+  data_scadenza: p.dataScadenza,
+  data_pagamento: p.dataPagamento || null,
+  stato: p.stato,
+  note: p.note,
+});
+
+let fornitori: Fornitore[] = [];
+let pagamenti: Pagamento[] = [];
+let loadedF = false;
+let loadedP = false;
+let loadingF = false;
+let loadingP = false;
+
+const fListeners = new Set<() => void>();
+const pListeners = new Set<() => void>();
+const subscribeF = (cb: () => void) => { fListeners.add(cb); return () => fListeners.delete(cb); };
+const subscribeP = (cb: () => void) => { pListeners.add(cb); return () => pListeners.delete(cb); };
+const emitF = () => fListeners.forEach((l) => l());
+const emitP = () => pListeners.forEach((l) => l());
+const snapshotF = () => fornitori;
+const snapshotP = () => pagamenti;
+
+export async function loadFornitori() {
+  if (loadingF) return;
+  loadingF = true;
+  try {
+    const { data, error } = await supabase
+      .from("fornitori")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) { console.error("[fornitori-store] load F error:", error); return; }
+    fornitori = (data ?? []).map((r) => rowToFornitore(r as FRow));
+    loadedF = true;
+    emitF();
+  } finally { loadingF = false; }
+}
+
+export async function loadPagamenti() {
+  if (loadingP) return;
+  loadingP = true;
+  try {
+    const { data, error } = await supabase
+      .from("pagamenti")
+      .select("*")
+      .order("data_scadenza", { ascending: true });
+    if (error) { console.error("[fornitori-store] load P error:", error); return; }
+    pagamenti = (data ?? []).map((r) => rowToPagamento(r as PRow));
+    loadedP = true;
+    emitP();
+  } finally { loadingP = false; }
+}
 
 if (typeof window !== "undefined") {
-  try {
-    const rawF = window.localStorage.getItem(STORAGE_KEY_F);
-    if (rawF) fornitori = JSON.parse(rawF);
-    const rawP = window.localStorage.getItem(STORAGE_KEY_P);
-    if (rawP) pagamenti = JSON.parse(rawP);
-  } catch {}
+  supabase.auth.getSession().then(({ data }) => {
+    if (data.session) { loadFornitori(); loadPagamenti(); }
+  });
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_OUT" || !session) {
+      fornitori = []; pagamenti = [];
+      loadedF = false; loadedP = false;
+      emitF(); emitP();
+    } else if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+      loadFornitori(); loadPagamenti();
+    }
+  });
 }
-
-function persistF() {
-  if (typeof window === "undefined") return;
-  try { window.localStorage.setItem(STORAGE_KEY_F, JSON.stringify(fornitori)); } catch {}
-}
-function persistP() {
-  if (typeof window === "undefined") return;
-  try { window.localStorage.setItem(STORAGE_KEY_P, JSON.stringify(pagamenti)); } catch {}
-}
-
-const fornitoriListeners = new Set<() => void>();
-const pagamentiListeners = new Set<() => void>();
-
-const subscribeF = (cb: () => void) => { fornitoriListeners.add(cb); return () => fornitoriListeners.delete(cb); };
-const subscribeP = (cb: () => void) => { pagamentiListeners.add(cb); return () => pagamentiListeners.delete(cb); };
-const emitF = () => { persistF(); fornitoriListeners.forEach((l) => l()); };
-const emitP = () => { persistP(); pagamentiListeners.forEach((l) => l()); };
-const getSnapshotF = () => fornitori;
-const getSnapshotP = () => pagamenti;
 
 export function useFornitori() {
-  return useSyncExternalStore(subscribeF, getSnapshotF, getSnapshotF);
+  const value = useSyncExternalStore(subscribeF, snapshotF, snapshotF);
+  useEffect(() => { if (!loadedF && !loadingF) loadFornitori(); }, []);
+  return value;
 }
 
 export function usePagamenti() {
-  return useSyncExternalStore(subscribeP, getSnapshotP, getSnapshotP);
+  const value = useSyncExternalStore(subscribeP, snapshotP, snapshotP);
+  useEffect(() => { if (!loadedP && !loadingP) loadPagamenti(); }, []);
+  return value;
 }
 
-export function addFornitore(data: Omit<Fornitore, "id">) {
-  fornitori = [{ ...data, id: `f${Date.now()}` }, ...fornitori];
+export async function addFornitore(data: Omit<Fornitore, "id">) {
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return;
+  const { data: row, error } = await supabase
+    .from("fornitori")
+    .insert({ ...fornitoreToRow(data), user_id: userData.user.id })
+    .select()
+    .single();
+  if (error || !row) { console.error("[fornitori-store] add F error:", error); return; }
+  fornitori = [rowToFornitore(row as FRow), ...fornitori];
   emitF();
 }
 
-export function updateFornitore(id: string, data: Omit<Fornitore, "id">) {
-  fornitori = fornitori.map((f) => (f.id === id ? { ...data, id } : f));
+export async function updateFornitore(id: string, data: Omit<Fornitore, "id">) {
+  const { data: row, error } = await supabase
+    .from("fornitori")
+    .update(fornitoreToRow(data))
+    .eq("id", id)
+    .select()
+    .single();
+  if (error || !row) { console.error("[fornitori-store] update F error:", error); return; }
+  fornitori = fornitori.map((f) => (f.id === id ? rowToFornitore(row as FRow) : f));
   emitF();
 }
 
-export function deleteFornitore(id: string) {
+export async function deleteFornitore(id: string) {
+  const { error } = await supabase.from("fornitori").delete().eq("id", id);
+  if (error) { console.error("[fornitori-store] delete F error:", error); return; }
   fornitori = fornitori.filter((f) => f.id !== id);
   pagamenti = pagamenti.filter((p) => p.fornitoreId !== id);
-  emitF();
-  emitP();
+  emitF(); emitP();
 }
 
 export function getFornitore(id: string) {
   return fornitori.find((f) => f.id === id);
 }
 
-export function addPagamento(data: Omit<Pagamento, "id">) {
-  pagamenti = [{ ...data, id: `p${Date.now()}` }, ...pagamenti];
+export async function addPagamento(data: Omit<Pagamento, "id">) {
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return;
+  const { data: row, error } = await supabase
+    .from("pagamenti")
+    .insert({ ...pagamentoToRow(data), user_id: userData.user.id })
+    .select()
+    .single();
+  if (error || !row) { console.error("[fornitori-store] add P error:", error); return; }
+  pagamenti = [rowToPagamento(row as PRow), ...pagamenti];
   emitP();
 }
 
-export function updatePagamento(id: string, data: Omit<Pagamento, "id">) {
-  pagamenti = pagamenti.map((p) => (p.id === id ? { ...data, id } : p));
+export async function updatePagamento(id: string, data: Omit<Pagamento, "id">) {
+  const { data: row, error } = await supabase
+    .from("pagamenti")
+    .update(pagamentoToRow(data))
+    .eq("id", id)
+    .select()
+    .single();
+  if (error || !row) { console.error("[fornitori-store] update P error:", error); return; }
+  pagamenti = pagamenti.map((p) => (p.id === id ? rowToPagamento(row as PRow) : p));
   emitP();
 }
 
-export function deletePagamento(id: string) {
+export async function deletePagamento(id: string) {
+  const { error } = await supabase.from("pagamenti").delete().eq("id", id);
+  if (error) { console.error("[fornitori-store] delete P error:", error); return; }
   pagamenti = pagamenti.filter((p) => p.id !== id);
   emitP();
 }
 
-export function segnaComePagato(id: string) {
+export async function segnaComePagato(id: string) {
   const today = new Date().toISOString().slice(0, 10);
-  pagamenti = pagamenti.map((p) =>
-    p.id === id ? { ...p, stato: "pagato", dataPagamento: today } : p,
-  );
+  const { data: row, error } = await supabase
+    .from("pagamenti")
+    .update({ stato: "pagato", data_pagamento: today })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error || !row) { console.error("[fornitori-store] segna pagato error:", error); return; }
+  pagamenti = pagamenti.map((p) => (p.id === id ? rowToPagamento(row as PRow) : p));
   emitP();
 }
 
