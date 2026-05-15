@@ -85,9 +85,9 @@ function ImpostazioniPage() {
       });
     setSaving(false);
     if (error) {
-      toast.error("Errore nel salvataggio");
+      toast.error("Errore nel salvataggio", { description: error.message });
     } else {
-      toast.success("Modifiche salvate");
+      toast.success("Modifiche salvate con successo");
     }
   };
 

@@ -88,29 +88,33 @@ function PreventiviPage() {
   const hasFilters = !!search || statoFilter !== "all" || clienteFilter !== "all";
   const clearFilters = () => { setSearch(""); setStatoFilter("all"); setClienteFilter("all"); };
 
-  const handleCreate = (data: Omit<Quote, "id" | "numero">) => {
-    addQuote(data);
+  const handleCreate = async (data: Omit<Quote, "id" | "numero">) => {
+    const ok = await addQuote(data);
+    if (!ok) return;
     setCreateOpen(false);
-    toast.success("Preventivo creato");
+    toast.success("Preventivo creato con successo");
   };
 
-  const handleUpdate = (data: Omit<Quote, "id" | "numero">) => {
+  const handleUpdate = async (data: Omit<Quote, "id" | "numero">) => {
     if (!editing) return;
-    updateQuote(editing.id, data);
+    const ok = await updateQuote(editing.id, data);
+    if (!ok) return;
     setEditing(null);
     setViewing(null);
-    toast.success("Preventivo aggiornato");
+    toast.success("Modifiche salvate con successo");
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    deleteQuote(deleteTarget.id);
+    const ok = await deleteQuote(deleteTarget.id);
+    if (!ok) return;
     toast.success("Preventivo eliminato");
     setDeleteTarget(null);
   };
 
-  const handleStatusChange = (q: Quote, stato: QuoteStatus) => {
-    setQuoteStatus(q.id, stato);
+  const handleStatusChange = async (q: Quote, stato: QuoteStatus) => {
+    const ok = await setQuoteStatus(q.id, stato);
+    if (!ok) return;
     if (viewing?.id === q.id) setViewing({ ...q, stato });
     toast.success(`Stato aggiornato: ${statusVariant[stato].label}`);
   };

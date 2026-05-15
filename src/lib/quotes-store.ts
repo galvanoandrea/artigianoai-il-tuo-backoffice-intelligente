@@ -133,9 +133,12 @@ function nextNumero(): string {
   return `${year}-${next}`;
 }
 
-export async function addQuote(data: Omit<Quote, "id" | "numero">) {
+export async function addQuote(data: Omit<Quote, "id" | "numero">): Promise<boolean> {
   const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) return;
+  if (!userData.user) {
+    toast.error("Utente non autenticato");
+    return false;
+  }
   const numero = nextNumero();
   const { data: row, error } = await supabase
     .from("quotes")
@@ -145,13 +148,14 @@ export async function addQuote(data: Omit<Quote, "id" | "numero">) {
   if (error || !row) {
     console.error("[quotes-store] add error:", error);
     toast.error(`Errore salvataggio preventivo: ${error?.message ?? "risposta vuota"}`);
-    return;
+    return false;
   }
   quotes = [rowToQuote(row as Row), ...quotes];
   emit();
+  return true;
 }
 
-export async function updateQuote(id: string, data: Omit<Quote, "id" | "numero">) {
+export async function updateQuote(id: string, data: Omit<Quote, "id" | "numero">): Promise<boolean> {
   const { data: row, error } = await supabase
     .from("quotes")
     .update(quoteToRow(data))
@@ -161,13 +165,14 @@ export async function updateQuote(id: string, data: Omit<Quote, "id" | "numero">
   if (error || !row) {
     console.error("[quotes-store] update error:", error);
     toast.error(`Errore aggiornamento preventivo: ${error?.message ?? "risposta vuota"}`);
-    return;
+    return false;
   }
   quotes = quotes.map((q) => (q.id === id ? rowToQuote(row as Row) : q));
   emit();
+  return true;
 }
 
-export async function setQuoteStatus(id: string, stato: QuoteStatus) {
+export async function setQuoteStatus(id: string, stato: QuoteStatus): Promise<boolean> {
   const { data: row, error } = await supabase
     .from("quotes")
     .update({ stato })
@@ -177,21 +182,23 @@ export async function setQuoteStatus(id: string, stato: QuoteStatus) {
   if (error || !row) {
     console.error("[quotes-store] setStatus error:", error);
     toast.error(`Errore cambio stato: ${error?.message ?? "risposta vuota"}`);
-    return;
+    return false;
   }
   quotes = quotes.map((q) => (q.id === id ? rowToQuote(row as Row) : q));
   emit();
+  return true;
 }
 
-export async function deleteQuote(id: string) {
+export async function deleteQuote(id: string): Promise<boolean> {
   const { error } = await supabase.from("quotes").delete().eq("id", id);
   if (error) {
     console.error("[quotes-store] delete error:", error);
     toast.error(`Errore eliminazione preventivo: ${error.message}`);
-    return;
+    return false;
   }
   quotes = quotes.filter((q) => q.id !== id);
   emit();
+  return true;
 }
 
 export function calcTotals(voci: QuoteItem[], ivaPercentuale: number) {

@@ -104,9 +104,12 @@ export function useClients() {
   return value;
 }
 
-export async function addClient(data: Omit<Client, "id">) {
+export async function addClient(data: Omit<Client, "id">): Promise<boolean> {
   const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) return;
+  if (!userData.user) {
+    toast.error("Utente non autenticato");
+    return false;
+  }
   const { data: row, error } = await supabase
     .from("clients")
     .insert({ ...clientToRow(data), user_id: userData.user.id })
@@ -115,13 +118,14 @@ export async function addClient(data: Omit<Client, "id">) {
   if (error || !row) {
     console.error("[clients-store] add error:", error);
     toast.error(`Errore salvataggio cliente: ${error?.message ?? "risposta vuota"}`);
-    return;
+    return false;
   }
   clients = [rowToClient(row as Row), ...clients];
   emit();
+  return true;
 }
 
-export async function updateClient(id: string, data: Omit<Client, "id">) {
+export async function updateClient(id: string, data: Omit<Client, "id">): Promise<boolean> {
   const { data: row, error } = await supabase
     .from("clients")
     .update(clientToRow(data))
@@ -131,21 +135,23 @@ export async function updateClient(id: string, data: Omit<Client, "id">) {
   if (error || !row) {
     console.error("[clients-store] update error:", error);
     toast.error(`Errore aggiornamento cliente: ${error?.message ?? "risposta vuota"}`);
-    return;
+    return false;
   }
   clients = clients.map((c) => (c.id === id ? rowToClient(row as Row) : c));
   emit();
+  return true;
 }
 
-export async function deleteClient(id: string) {
+export async function deleteClient(id: string): Promise<boolean> {
   const { error } = await supabase.from("clients").delete().eq("id", id);
   if (error) {
     console.error("[clients-store] delete error:", error);
     toast.error(`Errore eliminazione cliente: ${error.message}`);
-    return;
+    return false;
   }
   clients = clients.filter((c) => c.id !== id);
   emit();
+  return true;
 }
 
 export function getClient(id: string) {

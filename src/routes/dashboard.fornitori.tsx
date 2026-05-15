@@ -130,20 +130,23 @@ function FornitoriPage() {
   // --- fornitore handlers ---
   const openNewF = () => { setFEditing(null); setFData(emptyF()); setFOpen(true); };
   const openEditF = (f: Fornitore) => { setFEditing(f); setFData({ ...f }); setFOpen(true); };
-  const saveF = () => {
+  const saveF = async () => {
     if (!fData.ragioneSociale.trim()) { toast.error("Inserisci la ragione sociale"); return; }
     if (fEditing) {
-      updateFornitore(fEditing.id, fData);
-      toast.success("Fornitore aggiornato");
+      const ok = await updateFornitore(fEditing.id, fData);
+      if (!ok) return;
+      toast.success("Modifiche salvate con successo");
     } else {
-      addFornitore(fData);
-      toast.success("Fornitore aggiunto");
+      const ok = await addFornitore(fData);
+      if (!ok) return;
+      toast.success("Fornitore aggiunto con successo");
     }
     setFOpen(false);
   };
-  const confirmDeleteF = () => {
+  const confirmDeleteF = async () => {
     if (!deleteF) return;
-    deleteFornitore(deleteF.id);
+    const ok = await deleteFornitore(deleteF.id);
+    if (!ok) return;
     toast.success("Fornitore eliminato");
     setDeleteF(null);
   };
@@ -155,26 +158,30 @@ function FornitoriPage() {
     setPOpen(true);
   };
   const openEditP = (p: Pagamento) => { setPEditing(p); setPData({ ...p }); setPOpen(true); };
-  const saveP = () => {
+  const saveP = async () => {
     if (!pData.descrizione.trim()) { toast.error("Inserisci la descrizione"); return; }
     if (!pData.fornitoreId) { toast.error("Seleziona il fornitore"); return; }
     if (pData.importo <= 0) { toast.error("Inserisci un importo valido"); return; }
     if (pEditing) {
-      updatePagamento(pEditing.id, pData);
-      toast.success("Pagamento aggiornato");
+      const ok = await updatePagamento(pEditing.id, pData);
+      if (!ok) return;
+      toast.success("Modifiche salvate con successo");
     } else {
-      addPagamento(pData);
-      toast.success("Pagamento aggiunto");
+      const ok = await addPagamento(pData);
+      if (!ok) return;
+      toast.success("Pagamento aggiunto con successo");
     }
     setPOpen(false);
   };
-  const handleSegna = (p: Pagamento) => {
-    segnaComePagato(p.id);
+  const handleSegna = async (p: Pagamento) => {
+    const ok = await segnaComePagato(p.id);
+    if (!ok) return;
     toast.success("Segnato come pagato");
   };
-  const confirmDeleteP = () => {
+  const confirmDeleteP = async () => {
     if (!deleteP) return;
-    deletePagamento(deleteP.id);
+    const ok = await deletePagamento(deleteP.id);
+    if (!ok) return;
     toast.success("Pagamento eliminato");
     setDeleteP(null);
   };

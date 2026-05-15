@@ -159,76 +159,82 @@ export function usePagamenti() {
   return value;
 }
 
-export async function addFornitore(data: Omit<Fornitore, "id">) {
+export async function addFornitore(data: Omit<Fornitore, "id">): Promise<boolean> {
   const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) return;
+  if (!userData.user) { toast.error("Utente non autenticato"); return false; }
   const { data: row, error } = await supabase
     .from("fornitori")
     .insert({ ...fornitoreToRow(data), user_id: userData.user.id })
     .select()
     .single();
-  if (error || !row) { console.error("[fornitori-store] add F error:", error); toast.error(`Errore salvataggio fornitore: ${error?.message ?? "risposta vuota"}`); return; }
+  if (error || !row) { console.error("[fornitori-store] add F error:", error); toast.error(`Errore salvataggio fornitore: ${error?.message ?? "risposta vuota"}`); return false; }
   fornitori = [rowToFornitore(row as FRow), ...fornitori];
   emitF();
+  return true;
 }
 
-export async function updateFornitore(id: string, data: Omit<Fornitore, "id">) {
+export async function updateFornitore(id: string, data: Omit<Fornitore, "id">): Promise<boolean> {
   const { data: row, error } = await supabase
     .from("fornitori")
     .update(fornitoreToRow(data))
     .eq("id", id)
     .select()
     .single();
-  if (error || !row) { console.error("[fornitori-store] update F error:", error); toast.error(`Errore aggiornamento fornitore: ${error?.message ?? "risposta vuota"}`); return; }
+  if (error || !row) { console.error("[fornitori-store] update F error:", error); toast.error(`Errore aggiornamento fornitore: ${error?.message ?? "risposta vuota"}`); return false; }
   fornitori = fornitori.map((f) => (f.id === id ? rowToFornitore(row as FRow) : f));
   emitF();
+  return true;
 }
 
-export async function deleteFornitore(id: string) {
+export async function deleteFornitore(id: string): Promise<boolean> {
   const { error } = await supabase.from("fornitori").delete().eq("id", id);
-  if (error) { console.error("[fornitori-store] delete F error:", error); toast.error(`Errore eliminazione fornitore: ${error.message}`); return; }
+  if (error) { console.error("[fornitori-store] delete F error:", error); toast.error(`Errore eliminazione fornitore: ${error.message}`); return false; }
   fornitori = fornitori.filter((f) => f.id !== id);
   pagamenti = pagamenti.filter((p) => p.fornitoreId !== id);
   emitF(); emitP();
+  return true;
 }
 
 export function getFornitore(id: string) {
   return fornitori.find((f) => f.id === id);
 }
 
-export async function addPagamento(data: Omit<Pagamento, "id">) {
+export async function addPagamento(data: Omit<Pagamento, "id">): Promise<boolean> {
   const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) return;
+  if (!userData.user) { toast.error("Utente non autenticato"); return false; }
   const { data: row, error } = await supabase
     .from("pagamenti")
     .insert({ ...pagamentoToRow(data), user_id: userData.user.id })
     .select()
     .single();
-  if (error || !row) { console.error("[fornitori-store] add P error:", error); toast.error(`Errore salvataggio pagamento: ${error?.message ?? "risposta vuota"}`); return; }
+  if (error || !row) { console.error("[fornitori-store] add P error:", error); toast.error(`Errore salvataggio pagamento: ${error?.message ?? "risposta vuota"}`); return false; }
   pagamenti = [rowToPagamento(row as PRow), ...pagamenti];
   emitP();
+  return true;
 }
 
-export async function updatePagamento(id: string, data: Omit<Pagamento, "id">) {
+export async function updatePagamento(id: string, data: Omit<Pagamento, "id">): Promise<boolean> {
   const { data: row, error } = await supabase
     .from("pagamenti")
     .update(pagamentoToRow(data))
     .eq("id", id)
     .select()
     .single();
-  if (error || !row) { console.error("[fornitori-store] update P error:", error); toast.error(`Errore aggiornamento pagamento: ${error?.message ?? "risposta vuota"}`); return; }
+  if (error || !row) { console.error("[fornitori-store] update P error:", error); toast.error(`Errore aggiornamento pagamento: ${error?.message ?? "risposta vuota"}`); return false; }
   pagamenti = pagamenti.map((p) => (p.id === id ? rowToPagamento(row as PRow) : p));
   emitP();
+  return true;
 }
 
-export async function deletePagamento(id: string) {
+export async function deletePagamento(id: string): Promise<boolean> {
   const { error } = await supabase.from("pagamenti").delete().eq("id", id);
-  if (error) { console.error("[fornitori-store] delete P error:", error); toast.error(`Errore eliminazione pagamento: ${error.message}`); return; }
+  if (error) { console.error("[fornitori-store] delete P error:", error); toast.error(`Errore eliminazione pagamento: ${error.message}`); return false; }
   pagamenti = pagamenti.filter((p) => p.id !== id);
   emitP();
+  return true;
 }
 
-export async function segnaComePagato(id: string) {
+export async function segnaComePagato(id: string): Promise<boolean> {
   const today = new Date().toISOString().slice(0, 10);
   const { data: row, error } = await supabase
     .from("pagamenti")
@@ -236,9 +242,10 @@ export async function segnaComePagato(id: string) {
     .eq("id", id)
     .select()
     .single();
-  if (error || !row) { console.error("[fornitori-store] segna pagato error:", error); toast.error(`Errore: ${error?.message ?? "risposta vuota"}`); return; }
+  if (error || !row) { console.error("[fornitori-store] segna pagato error:", error); toast.error(`Errore: ${error?.message ?? "risposta vuota"}`); return false; }
   pagamenti = pagamenti.map((p) => (p.id === id ? rowToPagamento(row as PRow) : p));
   emitP();
+  return true;
 }
 
 export function formatEuroF(n: number) {

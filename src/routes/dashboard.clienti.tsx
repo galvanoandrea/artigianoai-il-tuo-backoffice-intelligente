@@ -66,22 +66,25 @@ function ClientiPage() {
   const hasFilters = !!search || statoFilter !== "all";
   const clearFilters = () => { setSearch(""); setStatoFilter("all"); };
 
-  const handleCreate = (data: Omit<Client, "id">) => {
-    addClient(data);
+  const handleCreate = async (data: Omit<Client, "id">) => {
+    const ok = await addClient(data);
+    if (!ok) return;
     setCreateOpen(false);
-    toast.success("Cliente aggiunto");
+    toast.success("Cliente aggiunto con successo");
   };
 
-  const handleUpdate = (data: Omit<Client, "id">) => {
+  const handleUpdate = async (data: Omit<Client, "id">) => {
     if (!editing) return;
-    updateClient(editing.id, data);
+    const ok = await updateClient(editing.id, data);
+    if (!ok) return;
     setEditing(null);
-    toast.success("Cliente aggiornato");
+    toast.success("Modifiche salvate con successo");
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    deleteClient(deleteTarget.id);
+    const ok = await deleteClient(deleteTarget.id);
+    if (!ok) return;
     toast.success("Cliente eliminato");
     setDeleteTarget(null);
   };
