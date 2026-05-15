@@ -79,20 +79,31 @@ function PreventiviPage() {
     if (!user || loadedRef.current) return;
     loadedRef.current = true;
     (async () => {
-      const { data } = await supabase
+      // Query only columns guaranteed to exist; new columns (email_azienda, cap, citta, provincia) added by migration
+      const { data: base } = await supabase
         .from("profiles")
-        .select("nome_completo, nome_azienda, email_azienda, telefono, partita_iva, indirizzo, cap, citta, provincia")
+        .select("nome_completo, nome_azienda, telefono, partita_iva, indirizzo")
         .eq("id", user.id)
         .maybeSingle();
-      if (!data) return;
-      const d = data as any;
-      const indirizzo = [d.indirizzo, d.cap && d.citta ? `${d.cap} ${d.citta}` : d.citta, d.provincia ? `(${d.provincia})` : ""].filter(Boolean).join(", ");
+      if (!base) return;
+      const d = base as any;
+
+      // Try to load extended columns added by pending migration — safe to fail
+      const { data: ext } = await supabase
+        .from("profiles")
+        .select("email_azienda, cap, citta, provincia")
+        .eq("id", user.id)
+        .maybeSingle()
+        .then((r) => r, () => ({ data: null, error: null }));
+      const x = (ext as any) ?? {};
+
+      const addrParts = [d.indirizzo, x.cap && x.citta ? `${x.cap} ${x.citta}` : x.citta, x.provincia ? `(${x.provincia})` : ""].filter(Boolean);
       setCompany({
         nome: d.nome_azienda || d.nome_completo || user.email || "",
-        indirizzo,
+        indirizzo: addrParts.join(", "),
         partitaIva: d.partita_iva || "",
         telefono: d.telefono || "",
-        email: d.email_azienda || user.email || "",
+        email: x.email_azienda || user.email || "",
       });
     })();
   }, [user]);
