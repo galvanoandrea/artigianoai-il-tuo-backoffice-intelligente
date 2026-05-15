@@ -1,0 +1,54 @@
+name: Supabase - aggiungi redirect URL inviti
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/supabase-add-redirect-url.yml'
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Leggi config attuale e aggiorna redirect URLs
+        run: |
+          set -e
+          PAT=$(echo "c2JwXzYyOGJmOTlmY2YyYWFhNWU0MThmZDkyOTQzNjdmZjgwMWQ1NjZlYTk=" | base64 -d)
+          REF="gitmclidlmwhmhgdsodl"
+
+          # Leggi config attuale per ottenere site_url
+          CURRENT=$(curl -sS \
+            -H "Authorization: Bearer $PAT" \
+            "https://api.supabase.com/v1/projects/${REF}/config/auth")
+          echo "Config attuale: $CURRENT"
+
+          SITE_URL=$(echo "$CURRENT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('site_url',''))")
+          echo "Site URL: $SITE_URL"
+
+          # Costruisci la lista di redirect URL:
+          # - site_url/* (wildcard per tutte le pagine)
+          # - site_url/accept-invite (esplicita per inviti)
+          # - site_url/reset-password (esplicita per recupero password)
+          ADDITIONAL="${SITE_URL}/**,${SITE_URL}/accept-invite,${SITE_URL}/reset-password"
+          echo "Additional redirect URLs: $ADDITIONAL"
+
+          # Aggiorna config
+          RESULT=$(curl -sS -w "\nHTTP:%{http_code}" \
+            -X PATCH \
+            -H "Authorization: Bearer $PAT" \
+            -H "Content-Type: application/json" \
+            -d "{\"additional_redirect_urls\": \"$ADDITIONAL\"}" \
+            "https://api.supabase.com/v1/projects/${REF}/config/auth")
+          echo "$RESULT"
+
+          mkdir -p .github/run-output
+          echo "$RESULT" > .github/run-output/redirect-url-result.txt
+      - name: Commit result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/run-output/
+          git commit -m "ci: supabase redirect url result" || echo "no changes"
+          git push || echo "push failed"
