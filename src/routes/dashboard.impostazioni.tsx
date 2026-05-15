@@ -46,9 +46,10 @@ function ImpostazioniPage() {
   useEffect(() => {
     if (!user) return;
     (async () => {
+      // select("*") so new columns added by migration are returned when available
       const { data, error } = await supabase
         .from("profiles")
-        .select("nome, cognome, nome_azienda, email_azienda, telefono, partita_iva, indirizzo, cap, citta, provincia, nome_completo")
+        .select("*")
         .eq("id", user.id)
         .maybeSingle();
       if (error) {
@@ -86,6 +87,7 @@ function ImpostazioniPage() {
     if (!user) return;
     setSaving(true);
     const nome_completo = `${form.nome} ${form.cognome}`.trim();
+    // Base columns — always exist
     const { error } = await supabase
       .from("profiles")
       .upsert({
@@ -94,14 +96,20 @@ function ImpostazioniPage() {
         cognome: form.cognome.trim() || null,
         nome_completo: nome_completo || null,
         nome_azienda: form.nome_azienda.trim() || null,
-        email_azienda: form.email_azienda.trim() || null,
         telefono: form.telefono.trim() || null,
         partita_iva: form.partita_iva.trim() || null,
         indirizzo: form.indirizzo.trim() || null,
+      });
+    // Extended columns added by migration — update separately, ignore if not yet present
+    await supabase
+      .from("profiles")
+      .update({
+        email_azienda: form.email_azienda.trim() || null,
         cap: form.cap.trim() || null,
         citta: form.citta.trim() || null,
         provincia: form.provincia.trim() || null,
-      } as any);
+      } as any)
+      .eq("id", user.id);
     setSaving(false);
     if (error) {
       toast.error("Errore nel salvataggio", { description: error.message });

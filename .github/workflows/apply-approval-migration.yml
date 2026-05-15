@@ -1,3 +1,4 @@
+# trigger: 2026-05-15
 name: Apply signup approval migration
 on:
   workflow_dispatch:
