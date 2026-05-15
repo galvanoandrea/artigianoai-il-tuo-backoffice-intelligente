@@ -1,5 +1,7 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -45,19 +47,22 @@ const statusVariant: Record<QuoteStatus, { label: string; className: string }> =
   rifiutato: { label: "Rifiutato", className: "bg-destructive/15 text-destructive border-transparent" },
 };
 
-const COMPANY = {
-  nome: "Mario Artigiano S.r.l.",
-  indirizzo: "Via dell'Artigianato 24, 20100 Milano (MI)",
-  partitaIva: "IT12345678901",
-  telefono: "+39 02 1234567",
-  email: "info@marioartigiano.it",
+type CompanyProfile = {
+  nome: string;
+  indirizzo: string;
+  partitaIva: string;
+  telefono: string;
+  email: string;
 };
 
 function PreventiviPage() {
+  const { user } = useAuth();
   const quotes = useQuotes();
   const clients = useClients();
   const [search, setSearch] = useState("");
   const [statoFilter, setStatoFilter] = useState<QuoteStatus | "all">("all");
+  const [company, setCompany] = useState<CompanyProfile>({ nome: "", indirizzo: "", partitaIva: "", telefono: "", email: "" });
+  const loadedRef = useRef(false);
   const [clienteFilter, setClienteFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
@@ -69,6 +74,28 @@ function PreventiviPage() {
     const t = setTimeout(() => setLoading(false), 400);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (!user || loadedRef.current) return;
+    loadedRef.current = true;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("nome_completo, nome_azienda, email_azienda, telefono, partita_iva, indirizzo, cap, citta, provincia")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!data) return;
+      const d = data as any;
+      const indirizzo = [d.indirizzo, d.cap && d.citta ? `${d.cap} ${d.citta}` : d.citta, d.provincia ? `(${d.provincia})` : ""].filter(Boolean).join(", ");
+      setCompany({
+        nome: d.nome_azienda || d.nome_completo || user.email || "",
+        indirizzo,
+        partitaIva: d.partita_iva || "",
+        telefono: d.telefono || "",
+        email: d.email_azienda || user.email || "",
+      });
+    })();
+  }, [user]);
 
   const clientName = (id: string) =>
     clients.find((c) => c.id === id)?.ragioneSociale ?? "—";
@@ -296,6 +323,7 @@ function PreventiviPage() {
               quote={viewing}
               clientName={clientName(viewing.clienteId)}
               clientFull={clients.find((c) => c.id === viewing.clienteId)}
+              company={company}
               onEdit={() => setEditing(viewing)}
               onStatusChange={(s) => handleStatusChange(viewing, s)}
             />
@@ -328,11 +356,12 @@ function PreventiviPage() {
 }
 
 function QuoteDetail({
-  quote, clientName, clientFull, onEdit, onStatusChange,
+  quote, clientName, clientFull, company, onEdit, onStatusChange,
 }: {
   quote: Quote;
   clientName: string;
   clientFull?: { ragioneSociale: string; referente: string; indirizzo: string; partitaIva: string; email: string; telefono: string };
+  company: CompanyProfile;
   onEdit: () => void;
   onStatusChange: (s: QuoteStatus) => void;
 }) {
@@ -354,10 +383,10 @@ function QuoteDetail({
         <div className="flex justify-between items-start gap-4 border-b pb-4">
           <div>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Da</p>
-            <p className="font-bold text-lg">{COMPANY.nome}</p>
-            <p className="text-sm text-muted-foreground">{COMPANY.indirizzo}</p>
-            <p className="text-sm text-muted-foreground">P.IVA {COMPANY.partitaIva}</p>
-            <p className="text-sm text-muted-foreground">{COMPANY.telefono} · {COMPANY.email}</p>
+            <p className="font-bold text-lg">{company.nome}</p>
+            {company.indirizzo && <p className="text-sm text-muted-foreground">{company.indirizzo}</p>}
+            {company.partitaIva && <p className="text-sm text-muted-foreground">P.IVA {company.partitaIva}</p>}
+            {(company.telefono || company.email) && <p className="text-sm text-muted-foreground">{[company.telefono, company.email].filter(Boolean).join(" · ")}</p>}
           </div>
           <div className="text-right">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Preventivo</p>

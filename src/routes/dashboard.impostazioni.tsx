@@ -17,8 +17,13 @@ type ProfileForm = {
   nome: string;
   cognome: string;
   nome_azienda: string;
+  email_azienda: string;
   telefono: string;
+  partita_iva: string;
   indirizzo: string;
+  cap: string;
+  citta: string;
+  provincia: string;
 };
 
 function ImpostazioniPage() {
@@ -29,8 +34,13 @@ function ImpostazioniPage() {
     nome: "",
     cognome: "",
     nome_azienda: "",
+    email_azienda: "",
     telefono: "",
+    partita_iva: "",
     indirizzo: "",
+    cap: "",
+    citta: "",
+    provincia: "",
   });
 
   useEffect(() => {
@@ -38,26 +48,30 @@ function ImpostazioniPage() {
     (async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("nome, cognome, nome_azienda, telefono, indirizzo, nome_completo")
+        .select("nome, cognome, nome_azienda, email_azienda, telefono, partita_iva, indirizzo, cap, citta, provincia, nome_completo")
         .eq("id", user.id)
         .maybeSingle();
       if (error) {
         toast.error("Errore nel caricamento del profilo");
       } else if (data) {
-        // Fallback: se nome è vuoto ma esiste nome_completo, prova a separare
-        let nome = data.nome ?? "";
-        let cognome = data.cognome ?? "";
-        if (!nome && !cognome && data.nome_completo) {
-          const parts = data.nome_completo.trim().split(/\s+/);
+        let nome = (data as any).nome ?? "";
+        let cognome = (data as any).cognome ?? "";
+        if (!nome && !cognome && (data as any).nome_completo) {
+          const parts = ((data as any).nome_completo as string).trim().split(/\s+/);
           nome = parts[0] ?? "";
           cognome = parts.slice(1).join(" ");
         }
         setForm({
           nome,
           cognome,
-          nome_azienda: data.nome_azienda ?? "",
-          telefono: data.telefono ?? "",
-          indirizzo: data.indirizzo ?? "",
+          nome_azienda: (data as any).nome_azienda ?? "",
+          email_azienda: (data as any).email_azienda ?? "",
+          telefono: (data as any).telefono ?? "",
+          partita_iva: (data as any).partita_iva ?? "",
+          indirizzo: (data as any).indirizzo ?? "",
+          cap: (data as any).cap ?? "",
+          citta: (data as any).citta ?? "",
+          provincia: (data as any).provincia ?? "",
         });
       }
       setLoading(false);
@@ -80,9 +94,14 @@ function ImpostazioniPage() {
         cognome: form.cognome.trim() || null,
         nome_completo: nome_completo || null,
         nome_azienda: form.nome_azienda.trim() || null,
+        email_azienda: form.email_azienda.trim() || null,
         telefono: form.telefono.trim() || null,
+        partita_iva: form.partita_iva.trim() || null,
         indirizzo: form.indirizzo.trim() || null,
-      });
+        cap: form.cap.trim() || null,
+        citta: form.citta.trim() || null,
+        provincia: form.provincia.trim() || null,
+      } as any);
     setSaving(false);
     if (error) {
       toast.error("Errore nel salvataggio", { description: error.message });
@@ -121,21 +140,45 @@ function ImpostazioniPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="nome_azienda">Nome azienda</Label>
-                <Input
-                  id="nome_azienda"
-                  value={form.nome_azienda}
-                  onChange={update("nome_azienda")}
-                  placeholder="Es. Rossi Impianti S.r.l."
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nome_azienda">Nome azienda</Label>
+                  <Input
+                    id="nome_azienda"
+                    value={form.nome_azienda}
+                    onChange={update("nome_azienda")}
+                    placeholder="Es. Rossi Impianti S.r.l."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="partita_iva">Partita IVA</Label>
+                  <Input
+                    id="partita_iva"
+                    value={form.partita_iva}
+                    onChange={update("partita_iva")}
+                    placeholder="IT12345678901"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email account</Label>
                   <Input id="email" type="email" value={user?.email ?? ""} disabled />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email_azienda">Email azienda</Label>
+                  <Input
+                    id="email_azienda"
+                    type="email"
+                    value={form.email_azienda}
+                    onChange={update("email_azienda")}
+                    placeholder="info@miaimpresa.it"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="telefono">Telefono</Label>
                   <Input
@@ -154,8 +197,46 @@ function ImpostazioniPage() {
                   id="indirizzo"
                   value={form.indirizzo}
                   onChange={update("indirizzo")}
-                  placeholder="Via Roma 1, 20100 Milano"
+                  placeholder="Via Roma 1"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-2 col-span-1">
+                  <Label htmlFor="cap">CAP</Label>
+                  <Input
+                    id="cap"
+                    value={form.cap}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/\D/g, "").slice(0, 5);
+                      setForm((f) => ({ ...f, cap: v }));
+                    }}
+                    placeholder="20100"
+                    maxLength={5}
+                  />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor="citta">Città</Label>
+                  <Input
+                    id="citta"
+                    value={form.citta}
+                    onChange={update("citta")}
+                    placeholder="Milano"
+                  />
+                </div>
+                <div className="space-y-2 col-span-1">
+                  <Label htmlFor="provincia">Prov.</Label>
+                  <Input
+                    id="provincia"
+                    value={form.provincia}
+                    onChange={(e) => {
+                      const v = e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2);
+                      setForm((f) => ({ ...f, provincia: v }));
+                    }}
+                    placeholder="MI"
+                    maxLength={2}
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end pt-2">

@@ -30,7 +30,7 @@ function Index() {
               <Link to="/login">Accedi</Link>
             </Button>
             <Button asChild size="sm" className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow">
-              <Link to="/login">Inizia gratis</Link>
+              <Link to="/signup">Registrati</Link>
             </Button>
           </div>
         </div>
@@ -53,12 +53,12 @@ function Index() {
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button asChild size="lg" className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow text-base h-14 px-8">
-                  <Link to="/login">
-                    Inizia gratis <ArrowRight className="ml-2 w-5 h-5" />
+                  <Link to="/signup">
+                    Registrati <ArrowRight className="ml-2 w-5 h-5" />
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline" className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-base h-14 px-8">
-                  <Link to="/dashboard">Vedi la demo</Link>
+                  <Link to="/login">Accedi</Link>
                 </Button>
               </div>
             </div>
@@ -94,10 +94,10 @@ function Index() {
       {/* CTA */}
       <section className="container mx-auto px-4 pb-20">
         <div className="rounded-3xl bg-gradient-hero text-primary-foreground p-10 md:p-16 text-center shadow-elegant">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Pronto a semplificare la tua giornata?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Pronto a iniziare?</h2>
           <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">Crea il tuo account gratuito in meno di 30 secondi.</p>
           <Button asChild size="lg" className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow h-14 px-10 text-base">
-            <Link to="/login">Inizia ora <ArrowRight className="ml-2 w-5 h-5" /></Link>
+            <Link to="/signup">Registrati <ArrowRight className="ml-2 w-5 h-5" /></Link>
           </Button>
         </div>
       </section>

@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AcceptInviteRouteImport } from './routes/accept-invite'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as PendingApprovalRouteImport } from './routes/pending-approval'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
@@ -25,6 +27,16 @@ import { Route as DashboardAdminRouteImport } from './routes/dashboard.admin'
 const AcceptInviteRoute = AcceptInviteRouteImport.update({
   id: '/accept-invite',
   path: '/accept-invite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PendingApprovalRoute = PendingApprovalRouteImport.update({
+  id: '/pending-approval',
+  path: '/pending-approval',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -89,7 +101,9 @@ export interface FileRoutesByFullPath {
   '/accept-invite': typeof AcceptInviteRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/pending-approval': typeof PendingApprovalRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/signup': typeof SignupRoute
   '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
   '/dashboard/fornitori': typeof DashboardFornitoriRoute
@@ -102,7 +116,9 @@ export interface FileRoutesByTo {
   '/accept-invite': typeof AcceptInviteRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/pending-approval': typeof PendingApprovalRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/signup': typeof SignupRoute
   '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
   '/dashboard/fornitori': typeof DashboardFornitoriRoute
@@ -117,7 +133,9 @@ export interface FileRoutesById {
   '/accept-invite': typeof AcceptInviteRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/pending-approval': typeof PendingApprovalRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/signup': typeof SignupRoute
   '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
   '/dashboard/fornitori': typeof DashboardFornitoriRoute
@@ -133,7 +151,9 @@ export interface FileRouteTypes {
     | '/accept-invite'
     | '/forgot-password'
     | '/login'
+    | '/pending-approval'
     | '/reset-password'
+    | '/signup'
     | '/dashboard/admin'
     | '/dashboard/clienti'
     | '/dashboard/fornitori'
@@ -146,7 +166,9 @@ export interface FileRouteTypes {
     | '/accept-invite'
     | '/forgot-password'
     | '/login'
+    | '/pending-approval'
     | '/reset-password'
+    | '/signup'
     | '/dashboard/admin'
     | '/dashboard/clienti'
     | '/dashboard/fornitori'
@@ -160,7 +182,9 @@ export interface FileRouteTypes {
     | '/accept-invite'
     | '/forgot-password'
     | '/login'
+    | '/pending-approval'
     | '/reset-password'
+    | '/signup'
     | '/dashboard/admin'
     | '/dashboard/clienti'
     | '/dashboard/fornitori'
@@ -175,7 +199,9 @@ export interface RootRouteChildren {
   AcceptInviteRoute: typeof AcceptInviteRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
+  PendingApprovalRoute: typeof PendingApprovalRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SignupRoute: typeof SignupRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -185,6 +211,20 @@ declare module '@tanstack/react-router' {
       path: '/accept-invite'
       fullPath: '/accept-invite'
       preLoaderRoute: typeof AcceptInviteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pending-approval': {
+      id: '/pending-approval'
+      path: '/pending-approval'
+      fullPath: '/pending-approval'
+      preLoaderRoute: typeof PendingApprovalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -295,7 +335,9 @@ const rootRouteChildren: RootRouteChildren = {
   AcceptInviteRoute: AcceptInviteRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
+  PendingApprovalRoute: PendingApprovalRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
