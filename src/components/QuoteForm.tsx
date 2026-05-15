@@ -43,7 +43,13 @@ export function QuoteForm({
   submitLabel?: string;
 }) {
   const clients = useClients();
-  const [data, setData] = useState<FormData>(empty);
+  const [data, setData] = useState<FormData>(() => {
+    if (initial) {
+      const { id: _id, numero: _n, ...rest } = initial;
+      return rest;
+    }
+    return empty();
+  });
   const [submitting, setSubmitting] = useState(false);
   const mountedRef = useRef(true);
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);
@@ -52,8 +58,6 @@ export function QuoteForm({
     if (initial) {
       const { id: _id, numero: _n, ...rest } = initial;
       setData(rest);
-    } else {
-      setData(empty());
     }
   }, [initial]);
 
