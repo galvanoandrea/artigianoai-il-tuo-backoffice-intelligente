@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
 import type { Client, ClientStatus } from "@/lib/clients-store";
 
 type FormData = Omit<Client, "id">;
@@ -40,7 +39,6 @@ export function ClientForm({
 }) {
   const [data, setData] = useState<FormData>(() => initial ? fromInitial(initial) : empty());
   const [submitting, setSubmitting] = useState(false);
-  const [capLoading, setCapLoading] = useState(false);
   const mountedRef = useRef(true);
   useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
@@ -50,30 +48,6 @@ export function ClientForm({
 
   const update = <K extends keyof FormData>(k: K, v: FormData[K]) =>
     setData((d) => ({ ...d, [k]: v }));
-
-  const handleCapChange = async (value: string) => {
-    const cap = value.replace(/\D/g, "").slice(0, 5);
-    update("cap", cap);
-    if (cap.length !== 5) return;
-    setCapLoading(true);
-    try {
-      const res = await fetch(`https://api.zippopotam.us/it/${cap}`);
-      if (!res.ok) return;
-      const json = await res.json();
-      const place = json.places?.[0];
-      if (place && mountedRef.current) {
-        setData((d) => ({
-          ...d,
-          citta: place["place name"] ?? d.citta,
-          provincia: (place["state abbreviation"] ?? d.provincia).toUpperCase(),
-        }));
-      }
-    } catch {
-      // silently ignore network errors
-    } finally {
-      if (mountedRef.current) setCapLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,27 +94,21 @@ export function ClientForm({
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="space-y-2">
               <Label htmlFor="cap">CAP</Label>
-              <div className="relative">
-                <Input
-                  id="cap"
-                  inputMode="numeric"
-                  maxLength={5}
-                  placeholder="20100"
-                  value={data.cap}
-                  onChange={(e) => handleCapChange(e.target.value)}
-                />
-                {capLoading && (
-                  <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-                )}
-              </div>
+              <Input
+                id="cap"
+                inputMode="numeric"
+                maxLength={5}
+                value={data.cap}
+                onChange={(e) => update("cap", e.target.value.replace(/\D/g, "").slice(0, 5))}
+              />
             </div>
             <div className="space-y-2 col-span-1 sm:col-span-1">
               <Label htmlFor="citta">Città</Label>
-              <Input id="citta" placeholder="Milano" value={data.citta} onChange={(e) => update("citta", e.target.value)} />
+              <Input id="citta" value={data.citta} onChange={(e) => update("citta", e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="provincia">Prov.</Label>
-              <Input id="provincia" maxLength={2} placeholder="MI" value={data.provincia} onChange={(e) => update("provincia", e.target.value.toUpperCase())} />
+              <Input id="provincia" maxLength={2} value={data.provincia} onChange={(e) => update("provincia", e.target.value.toUpperCase())} />
             </div>
           </div>
         </div>
