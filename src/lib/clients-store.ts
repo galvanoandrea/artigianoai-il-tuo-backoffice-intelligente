@@ -11,6 +11,9 @@ export interface Client {
   telefono: string;
   email: string;
   indirizzo: string;
+  cap: string;
+  citta: string;
+  provincia: string;
   partitaIva: string;
   note: string;
   stato: ClientStatus;
@@ -23,6 +26,9 @@ type Row = {
   telefono: string;
   email: string;
   indirizzo: string;
+  cap: string;
+  citta: string;
+  provincia: string;
   partita_iva: string;
   note: string;
   stato: ClientStatus;
@@ -35,6 +41,9 @@ const rowToClient = (r: Row): Client => ({
   telefono: r.telefono ?? "",
   email: r.email ?? "",
   indirizzo: r.indirizzo ?? "",
+  cap: r.cap ?? "",
+  citta: r.citta ?? "",
+  provincia: r.provincia ?? "",
   partitaIva: r.partita_iva ?? "",
   note: r.note ?? "",
   stato: r.stato ?? "attivo",
@@ -46,6 +55,9 @@ const clientToRow = (c: Omit<Client, "id">) => ({
   telefono: c.telefono,
   email: c.email,
   indirizzo: c.indirizzo,
+  cap: c.cap,
+  citta: c.citta,
+  provincia: c.provincia,
   partita_iva: c.partitaIva,
   note: c.note,
   stato: c.stato,
@@ -73,7 +85,7 @@ export async function loadClients() {
       toast.error(`Errore caricamento clienti: ${error.message}`);
       return;
     }
-    clients = (data ?? []).map((r) => rowToClient(r as Row));
+    clients = (data ?? []).map((r) => rowToClient(r as unknown as Row));
     loaded = true;
     emit();
   } finally {
@@ -112,7 +124,8 @@ export async function addClient(data: Omit<Client, "id">): Promise<boolean> {
   }
   const { data: row, error } = await supabase
     .from("clients")
-    .insert({ ...clientToRow(data), user_id: userData.user.id })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .insert({ ...(clientToRow(data) as any), user_id: userData.user.id })
     .select()
     .single();
   if (error || !row) {
@@ -120,7 +133,7 @@ export async function addClient(data: Omit<Client, "id">): Promise<boolean> {
     toast.error(`Errore salvataggio cliente: ${error?.message ?? "risposta vuota"}`);
     return false;
   }
-  clients = [rowToClient(row as Row), ...clients];
+  clients = [rowToClient(row as unknown as Row), ...clients];
   emit();
   return true;
 }
@@ -128,7 +141,8 @@ export async function addClient(data: Omit<Client, "id">): Promise<boolean> {
 export async function updateClient(id: string, data: Omit<Client, "id">): Promise<boolean> {
   const { data: row, error } = await supabase
     .from("clients")
-    .update(clientToRow(data))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .update(clientToRow(data) as any)
     .eq("id", id)
     .select()
     .single();
@@ -137,7 +151,7 @@ export async function updateClient(id: string, data: Omit<Client, "id">): Promis
     toast.error(`Errore aggiornamento cliente: ${error?.message ?? "risposta vuota"}`);
     return false;
   }
-  clients = clients.map((c) => (c.id === id ? rowToClient(row as Row) : c));
+  clients = clients.map((c) => (c.id === id ? rowToClient(row as unknown as Row) : c));
   emit();
   return true;
 }

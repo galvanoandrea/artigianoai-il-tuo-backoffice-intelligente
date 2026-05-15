@@ -66,14 +66,14 @@ function ClientiPage() {
   const hasFilters = !!search || statoFilter !== "all";
   const clearFilters = () => { setSearch(""); setStatoFilter("all"); };
 
-  const handleCreate = async (data: Omit<Client, "id">) => {
+  const handleCreate = async (data: Omit<Client, "id">): Promise<void> => {
     const ok = await addClient(data);
     if (!ok) return;
     setCreateOpen(false);
     toast.success("Cliente aggiunto con successo");
   };
 
-  const handleUpdate = async (data: Omit<Client, "id">) => {
+  const handleUpdate = async (data: Omit<Client, "id">): Promise<void> => {
     if (!editing) return;
     const ok = await updateClient(editing.id, data);
     if (!ok) return;
@@ -264,7 +264,7 @@ function ClientiPage() {
                 <DetailRow icon={Users} label="Referente" value={viewing.referente} />
                 <DetailRow icon={Phone} label="Telefono" value={viewing.telefono} />
                 <DetailRow icon={Mail} label="Email" value={viewing.email} />
-                <DetailRow icon={MapPin} label="Indirizzo" value={viewing.indirizzo} />
+                <DetailRow icon={MapPin} label="Indirizzo" value={[viewing.indirizzo, viewing.cap && viewing.citta ? `${viewing.cap} ${viewing.citta} (${viewing.provincia})` : ""].filter(Boolean).join(", ")} />
                 <DetailRow icon={FileText} label="Partita IVA" value={viewing.partitaIva} />
                 {viewing.note && (
                   <div className="pt-3 border-t">
