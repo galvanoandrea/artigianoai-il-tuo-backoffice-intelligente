@@ -1,4 +1,0 @@
-=== CLIENTS ===
-[{"id":"6d9fe40e-1071-4f48-abbc-551827e11195","ragione_sociale":"Edilizia Rossi S.r.l."},{"id":"c5191d60-9081-4421-9f7e-7b0e9ea78f3d","ragione_sociale":"Studio Tecnico Bianchi"},{"id":"da7ad54d-26ae-403a-9024-12f9767c7d21","ragione_sociale":"Verde Giardini SAS"},{"id":"0ce76c20-9d92-4788-a5f4-16c195532320","ragione_sociale":"Casa Bella Ristrutturazioni"},{"id":"324a99ec-9c33-4901-8fe3-e3b8cbc9a5dc","ragione_sociale":"Officine Ferrari S.n.c."}]
-=== QUOTES ===
-[]
