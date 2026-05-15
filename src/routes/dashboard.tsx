@@ -29,6 +29,23 @@ function DashboardLayout() {
     if (!loading && !user) navigate({ to: "/login" });
   }, [loading, user, navigate]);
 
+  useEffect(() => {
+    if (loading || !user) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("approved")
+        .eq("id", user.id)
+        .single();
+      if (cancelled) return;
+      if (!error && data && data.approved === false) {
+        navigate({ to: "/pending-approval" });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [loading, user, navigate]);
+
   const userName: string = user?.user_metadata?.nome_completo || user?.email?.split("@")[0] || "Utente";
   const initials = userName
     .split(" ")

@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
-import { ShieldCheck, Mail, Users, Ban, CheckCircle2, RefreshCw } from "lucide-react";
+import { ShieldCheck, Mail, Users, Ban, CheckCircle2, RefreshCw, UserCheck, UserX, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,7 @@ type UserEntry = {
   created_at: string;
   last_sign_in_at: string | null;
   banned: boolean;
+  approved: boolean;
 };
 
 async function getAuthHeader(): Promise<string | null> {
@@ -53,7 +54,7 @@ function AdminPage() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [email, setEmail] = useState("");
   const [inviting, setInviting] = useState(false);
-  const [confirmTarget, setConfirmTarget] = useState<{ user: UserEntry; action: "ban" | "unban" } | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<{ user: UserEntry; action: "ban" | "unban" | "approve" | "reject" } | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
 
   const loadUsers = useCallback(async () => {
@@ -113,8 +114,18 @@ function AdminPage() {
       if (!res.ok) {
         toast.error("Operazione fallita", { description: res.error });
       } else {
-        toast.success(action === "ban" ? `${user.email} bloccato` : `${user.email} sbloccato`);
-        setUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, banned: action === "ban" } : u));
+        const msg =
+          action === "ban" ? `${user.email} bloccato` :
+          action === "unban" ? `${user.email} sbloccato` :
+          action === "approve" ? `${user.email} approvato` :
+          `${user.email} rifiutato`;
+        toast.success(msg);
+        setUsers((prev) => prev.map((u) => {
+          if (u.id !== user.id) return u;
+          if (action === "ban" || action === "unban") return { ...u, banned: action === "ban" };
+          if (action === "approve" || action === "reject") return { ...u, approved: action === "approve" };
+          return u;
+        }));
       }
     } catch {
       toast.error("Errore di rete");

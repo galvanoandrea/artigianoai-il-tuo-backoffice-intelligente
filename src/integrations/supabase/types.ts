@@ -16,38 +16,53 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
+          approved: boolean
+          cap: string | null
+          citta: string | null
           cognome: string | null
           created_at: string
+          email_azienda: string | null
           id: string
           indirizzo: string | null
           nome: string | null
           nome_azienda: string | null
           nome_completo: string | null
           partita_iva: string | null
+          provincia: string | null
           telefono: string | null
           updated_at: string
         }
         Insert: {
+          approved?: boolean
+          cap?: string | null
+          citta?: string | null
           cognome?: string | null
           created_at?: string
+          email_azienda?: string | null
           id: string
           indirizzo?: string | null
           nome?: string | null
           nome_azienda?: string | null
           nome_completo?: string | null
           partita_iva?: string | null
+          provincia?: string | null
           telefono?: string | null
           updated_at?: string
         }
         Update: {
+          approved?: boolean
+          cap?: string | null
+          citta?: string | null
           cognome?: string | null
           created_at?: string
+          email_azienda?: string | null
           id?: string
           indirizzo?: string | null
           nome?: string | null
           nome_azienda?: string | null
           nome_completo?: string | null
           partita_iva?: string | null
+          provincia?: string | null
           telefono?: string | null
           updated_at?: string
         }
