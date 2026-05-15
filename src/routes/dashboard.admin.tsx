@@ -192,7 +192,9 @@ function AdminPage() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
             <CardTitle className="flex items-center gap-2"><Users className="w-4 h-4" /> Utenti registrati</CardTitle>
-            <CardDescription className="mt-1">Puoi bloccare o sbloccare l'accesso a qualsiasi utente.</CardDescription>
+            <CardDescription className="mt-1">
+              Gli utenti <strong>In attesa</strong> hanno bisogno di approvazione prima di accedere.
+            </CardDescription>
           </div>
           <Button variant="ghost" size="icon" onClick={loadUsers} disabled={loadingUsers} title="Aggiorna lista">
             <RefreshCw className={`h-4 w-4 ${loadingUsers ? "animate-spin" : ""}`} />
@@ -209,15 +211,26 @@ function AdminPage() {
             <div className="divide-y">
               {users.map((u) => {
                 const isMe = u.id === me?.id;
+                const pending = !u.approved && !u.banned;
                 return (
                   <div key={u.id} className="flex items-center gap-3 px-4 py-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium text-sm truncate">{u.email}</span>
                         {isMe && <Badge variant="outline" className="text-xs">Tu</Badge>}
+                        {pending && (
+                          <Badge variant="outline" className="bg-amber-500/15 text-amber-600 border-transparent text-xs flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> In attesa
+                          </Badge>
+                        )}
                         {u.banned && (
                           <Badge variant="outline" className="bg-destructive/15 text-destructive border-transparent text-xs">
                             Bloccato
+                          </Badge>
+                        )}
+                        {u.approved && !u.banned && !isMe && (
+                          <Badge variant="outline" className="bg-emerald-500/15 text-emerald-600 border-transparent text-xs">
+                            Attivo
                           </Badge>
                         )}
                       </div>
@@ -227,23 +240,47 @@ function AdminPage() {
                       </div>
                     </div>
                     {!isMe && (
-                      <Button
-                        size="sm"
-                        variant={u.banned ? "outline" : "outline"}
-                        disabled={actioning === u.id}
-                        onClick={() => setConfirmTarget({ user: u, action: u.banned ? "unban" : "ban" })}
-                        className={u.banned
-                          ? "text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-950"
-                          : "text-destructive border-destructive/30 hover:bg-destructive/10"}
-                      >
+                      <div className="flex items-center gap-2 shrink-0">
                         {actioning === u.id ? (
-                          <RefreshCw className="h-3 w-3 animate-spin" />
-                        ) : u.banned ? (
-                          <><CheckCircle2 className="h-3 w-3 mr-1" /> Sblocca</>
+                          <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+                        ) : pending ? (
+                          <>
+                            <Button
+                              size="sm"
+                              disabled={actioning === u.id}
+                              onClick={() => setConfirmTarget({ user: u, action: "approve" })}
+                              className="bg-emerald-600 text-white hover:bg-emerald-700 h-8"
+                            >
+                              <UserCheck className="h-3 w-3 mr-1" /> Approva
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={actioning === u.id}
+                              onClick={() => setConfirmTarget({ user: u, action: "reject" })}
+                              className="text-destructive border-destructive/30 hover:bg-destructive/10 h-8"
+                            >
+                              <UserX className="h-3 w-3 mr-1" /> Rifiuta
+                            </Button>
+                          </>
                         ) : (
-                          <><Ban className="h-3 w-3 mr-1" /> Blocca</>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={actioning === u.id}
+                            onClick={() => setConfirmTarget({ user: u, action: u.banned ? "unban" : "ban" })}
+                            className={u.banned
+                              ? "text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-950 h-8"
+                              : "text-destructive border-destructive/30 hover:bg-destructive/10 h-8"}
+                          >
+                            {u.banned ? (
+                              <><CheckCircle2 className="h-3 w-3 mr-1" /> Sblocca</>
+                            ) : (
+                              <><Ban className="h-3 w-3 mr-1" /> Blocca</>
+                            )}
+                          </Button>
                         )}
-                      </Button>
+                      </div>
                     )}
                   </div>
                 );
@@ -258,23 +295,32 @@ function AdminPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmTarget?.action === "ban" ? "Bloccare questo utente?" : "Sbloccare questo utente?"}
+              {confirmTarget?.action === "approve" && "Approvare questo utente?"}
+              {confirmTarget?.action === "reject" && "Rifiutare questo utente?"}
+              {confirmTarget?.action === "ban" && "Bloccare questo utente?"}
+              {confirmTarget?.action === "unban" && "Sbloccare questo utente?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmTarget?.action === "ban"
-                ? `${confirmTarget.user.email} non potrà più accedere alla piattaforma. Potrai sbloccarlo in qualsiasi momento.`
-                : `${confirmTarget?.user.email} potrà tornare ad accedere alla piattaforma.`}
+              {confirmTarget?.action === "approve" && `${confirmTarget.user.email} potrà accedere alla piattaforma.`}
+              {confirmTarget?.action === "reject" && `${confirmTarget?.user.email} non potrà accedere. Potrai approvarlo in seguito aggiornando la lista.`}
+              {confirmTarget?.action === "ban" && `${confirmTarget?.user.email} non potrà più accedere. Potrai sbloccarlo in qualsiasi momento.`}
+              {confirmTarget?.action === "unban" && `${confirmTarget?.user.email} potrà tornare ad accedere alla piattaforma.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annulla</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBanAction}
-              className={confirmTarget?.action === "ban"
-                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                : "bg-emerald-600 text-white hover:bg-emerald-700"}
+              className={
+                confirmTarget?.action === "approve" || confirmTarget?.action === "unban"
+                  ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                  : "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              }
             >
-              {confirmTarget?.action === "ban" ? "Blocca accesso" : "Sblocca accesso"}
+              {confirmTarget?.action === "approve" && "Approva accesso"}
+              {confirmTarget?.action === "reject" && "Rifiuta"}
+              {confirmTarget?.action === "ban" && "Blocca accesso"}
+              {confirmTarget?.action === "unban" && "Sblocca accesso"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
