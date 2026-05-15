@@ -1,0 +1,100 @@
+name: Seed demo data
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/seed-demo-data.yml'
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Insert demo clients + quotes
+        run: |
+          set -e
+          PAT=$(echo "c2JwXzYyOGJmOTlmY2YyYWFhNWU0MThmZDkyOTQzNjdmZjgwMWQ1NjZlYTk=" | base64 -d)
+          REF="gitmclidlmwhmhgdsodl"
+          USER_ID="42336ea1-6496-4722-9d12-fa9e58487d48"
+          API="https://api.supabase.com/v1/projects/${REF}/database/query"
+          export USER_ID
+
+          echo "=== Insert clients ==="
+          cat > /tmp/clients.sql <<SQL
+          DELETE FROM public.quotes WHERE user_id = '${USER_ID}';
+          DELETE FROM public.clients WHERE user_id = '${USER_ID}';
+
+          INSERT INTO public.clients (user_id, ragione_sociale, referente, telefono, email, indirizzo, partita_iva, note, stato)
+          VALUES
+            ('${USER_ID}', 'Edilizia Rossi S.r.l.', 'Mario Rossi', '+39 06 1234567', 'info@ediliziarossi.it', 'Via Roma 12, 00100 Roma', '01234567890', 'Cliente storico, paga sempre puntuale', 'attivo'),
+            ('${USER_ID}', 'Studio Tecnico Bianchi', 'Anna Bianchi', '+39 02 9876543', 'a.bianchi@studiotecnico.it', 'Corso Buenos Aires 45, 20124 Milano', '09876543210', 'Lavori di progettazione e direzione lavori', 'attivo'),
+            ('${USER_ID}', 'Verde Giardini SAS', 'Luigi Verdi', '+39 011 5556677', 'luigi@verdegiardini.it', 'Via dei Mille 88, 10100 Torino', '11122233344', 'Manutenzione verde annuale', 'attivo'),
+            ('${USER_ID}', 'Casa Bella Ristrutturazioni', 'Giulia Conti', '+39 081 3344556', 'giulia.conti@casabella.it', 'Via Toledo 200, 80134 Napoli', '55566677788', 'Ristrutturazioni chiavi in mano', 'potenziale'),
+            ('${USER_ID}', 'Officine Ferrari S.n.c.', 'Paolo Ferrari', '+39 051 7788990', 'p.ferrari@officineferrari.it', 'Via Emilia 350, 40139 Bologna', '88899900011', 'Lavori meccanici e saldatura', 'attivo')
+          RETURNING id, ragione_sociale;
+          SQL
+
+          jq -n --rawfile q /tmp/clients.sql '{query: $q}' > /tmp/cb.json
+          curl -sS -o /tmp/clients.json -w "clients HTTP %{http_code}\n" \
+            -X POST "$API" \
+            -H "Authorization: Bearer $PAT" \
+            -H "Content-Type: application/json" \
+            --data @/tmp/cb.json
+          cat /tmp/clients.json; echo
+
+          echo "=== Build quotes SQL ==="
+          python3 <<'PYEOF' > /tmp/quotes.sql
+          import json, os
+          clients = json.load(open('/tmp/clients.json'))
+          m = {c['ragione_sociale']: c['id'] for c in clients}
+          USER_ID = os.environ['USER_ID']
+
+          quotes = [
+            {"numero":"2026-001","cliente":"Edilizia Rossi S.r.l.","data":"2026-04-15","titolo":"Ristrutturazione bagno completo","descrizione":"Rifacimento completo del bagno: rimozione vecchi sanitari, posa nuove piastrelle, installazione sanitari e doccia walk-in.","voci":[{"descrizione":"Demolizione e rimozione macerie","quantita":1,"unita":"a corpo","prezzo_unitario":450},{"descrizione":"Piastrelle gres 60x60","quantita":18,"unita":"mq","prezzo_unitario":38},{"descrizione":"Posa piastrelle e fughe","quantita":18,"unita":"mq","prezzo_unitario":35},{"descrizione":"Sanitari sospesi (wc + bidet + lavabo)","quantita":1,"unita":"a corpo","prezzo_unitario":850},{"descrizione":"Box doccia walk-in 120x80","quantita":1,"unita":"cad","prezzo_unitario":720},{"descrizione":"Manodopera idraulico ed elettricista","quantita":24,"unita":"h","prezzo_unitario":38}],"iva":10,"stato":"accettato"},
+            {"numero":"2026-002","cliente":"Studio Tecnico Bianchi","data":"2026-04-22","titolo":"Tinteggiatura uffici 120 mq","descrizione":"Tinteggiatura pareti e soffitti uffici, due mani di idropittura traspirante bianca.","voci":[{"descrizione":"Preparazione superfici (stuccatura e carteggiatura)","quantita":240,"unita":"mq","prezzo_unitario":4},{"descrizione":"Idropittura traspirante bianca","quantita":240,"unita":"mq","prezzo_unitario":6.5},{"descrizione":"Protezione pavimenti e arredi","quantita":1,"unita":"a corpo","prezzo_unitario":180}],"iva":22,"stato":"inviato"},
+            {"numero":"2026-003","cliente":"Verde Giardini SAS","data":"2026-05-02","titolo":"Contratto manutenzione verde annuale","descrizione":"Manutenzione ordinaria del giardino aziendale: 12 interventi annuali di taglio prato, potatura siepi, concimazione e trattamenti.","voci":[{"descrizione":"Tagli prato (mensili)","quantita":12,"unita":"cad","prezzo_unitario":95},{"descrizione":"Potature siepi (trimestrali)","quantita":4,"unita":"cad","prezzo_unitario":180},{"descrizione":"Concimazione e trattamenti","quantita":3,"unita":"cad","prezzo_unitario":140},{"descrizione":"Smaltimento sfalci","quantita":12,"unita":"cad","prezzo_unitario":45}],"iva":22,"stato":"accettato"},
+            {"numero":"2026-004","cliente":"Casa Bella Ristrutturazioni","data":"2026-05-08","titolo":"Impianto elettrico appartamento 90 mq","descrizione":"Realizzazione nuovo impianto elettrico certificato a norma CEI 64-8 per appartamento residenziale.","voci":[{"descrizione":"Tracce e canaline","quantita":1,"unita":"a corpo","prezzo_unitario":1200},{"descrizione":"Cavi, scatole e frutti","quantita":1,"unita":"a corpo","prezzo_unitario":1850},{"descrizione":"Quadro elettrico generale","quantita":1,"unita":"cad","prezzo_unitario":680},{"descrizione":"Manodopera elettricista","quantita":40,"unita":"h","prezzo_unitario":35},{"descrizione":"Certificazione e dichiarazione di conformita","quantita":1,"unita":"a corpo","prezzo_unitario":250}],"iva":10,"stato":"bozza"},
+            {"numero":"2026-005","cliente":"Officine Ferrari S.n.c.","data":"2026-05-12","titolo":"Riparazione tetto e sostituzione grondaie","descrizione":"Riparazione manto di copertura, sostituzione tegole rotte e rifacimento completo grondaie in alluminio.","voci":[{"descrizione":"Smontaggio vecchie grondaie","quantita":1,"unita":"a corpo","prezzo_unitario":280},{"descrizione":"Tegole sostitutive","quantita":40,"unita":"cad","prezzo_unitario":4.5},{"descrizione":"Grondaia alluminio preverniciato","quantita":28,"unita":"ml","prezzo_unitario":22},{"descrizione":"Pluviali e accessori","quantita":1,"unita":"a corpo","prezzo_unitario":320},{"descrizione":"Noleggio piattaforma aerea (2 giorni)","quantita":2,"unita":"gg","prezzo_unitario":180},{"descrizione":"Manodopera operai specializzati","quantita":32,"unita":"h","prezzo_unitario":32}],"iva":22,"stato":"rifiutato"}
+          ]
+
+          for q in quotes:
+              cid = m.get(q["cliente"])
+              if not cid:
+                  print(f"-- skipped (no client id for {q['cliente']})")
+                  continue
+              voci_json = json.dumps(q["voci"]).replace("'", "''")
+              titolo = q["titolo"].replace("'", "''")
+              desc = q["descrizione"].replace("'", "''")
+              print(f"""INSERT INTO public.quotes (user_id, numero, cliente_id, data, titolo, descrizione, voci, note, iva_percentuale, stato)
+          VALUES ('{USER_ID}', '{q["numero"]}', '{cid}', '{q["data"]}', '{titolo}', '{desc}', '{voci_json}'::jsonb, '', {q["iva"]}, '{q["stato"]}');""")
+          PYEOF
+
+          echo "--- generated SQL ---"
+          cat /tmp/quotes.sql
+          echo "---"
+
+          jq -n --rawfile q /tmp/quotes.sql '{query: $q}' > /tmp/qb.json
+          curl -sS -o /tmp/qresult.json -w "quotes HTTP %{http_code}\n" \
+            -X POST "$API" \
+            -H "Authorization: Bearer $PAT" \
+            -H "Content-Type: application/json" \
+            --data @/tmp/qb.json
+          cat /tmp/qresult.json; echo
+
+          mkdir -p .github/run-output
+          {
+            echo "=== CLIENTS ==="
+            cat /tmp/clients.json
+            echo ""
+            echo "=== QUOTES ==="
+            cat /tmp/qresult.json
+          } > .github/run-output/seed.txt
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/run-output/
+          git commit -m "ci: seed demo data result" || echo "no changes"
+          git push || echo "push failed"
