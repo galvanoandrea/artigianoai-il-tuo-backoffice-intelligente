@@ -88,14 +88,14 @@ function PreventiviPage() {
   const hasFilters = !!search || statoFilter !== "all" || clienteFilter !== "all";
   const clearFilters = () => { setSearch(""); setStatoFilter("all"); setClienteFilter("all"); };
 
-  const handleCreate = async (data: Omit<Quote, "id" | "numero">) => {
+  const handleCreate = async (data: Omit<Quote, "id" | "numero">): Promise<void> => {
     const ok = await addQuote(data);
     if (!ok) return;
     setCreateOpen(false);
     toast.success("Preventivo creato con successo");
   };
 
-  const handleUpdate = async (data: Omit<Quote, "id" | "numero">) => {
+  const handleUpdate = async (data: Omit<Quote, "id" | "numero">): Promise<void> => {
     if (!editing) return;
     const ok = await updateQuote(editing.id, data);
     if (!ok) return;

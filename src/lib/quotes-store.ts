@@ -44,8 +44,8 @@ const rowToQuote = (r: Row): Quote => ({
   data: r.data,
   titolo: r.titolo ?? "",
   descrizione: r.descrizione ?? "",
-  voci: (r.voci ?? []).map((v: any) => ({
-    id: v.id ?? "",
+  voci: (r.voci ?? []).map((v: any, i: number) => ({
+    id: v.id || `v${r.id}-${i}-${Date.now()}`,
     descrizione: v.descrizione ?? "",
     quantita: Number(v.quantita) || 0,
     unita: v.unita ?? "cad",

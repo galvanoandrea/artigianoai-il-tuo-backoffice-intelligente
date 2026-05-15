@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,12 +38,15 @@ export function QuoteForm({
   initial, onSubmit, onCancel, submitLabel = "Salva",
 }: {
   initial?: Quote;
-  onSubmit: (data: FormData) => void;
+  onSubmit: (data: FormData) => Promise<void>;
   onCancel: () => void;
   submitLabel?: string;
 }) {
   const clients = useClients();
   const [data, setData] = useState<FormData>(empty);
+  const [submitting, setSubmitting] = useState(false);
+  const mountedRef = useRef(true);
+  useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
   useEffect(() => {
     if (initial) {
@@ -82,10 +85,15 @@ export function QuoteForm({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!data.clienteId || !data.titolo.trim()) return;
-    onSubmit(data);
+    setSubmitting(true);
+    try {
+      await onSubmit(data);
+    } finally {
+      if (mountedRef.current) setSubmitting(false);
+    }
   };
 
   return (
@@ -191,8 +199,10 @@ export function QuoteForm({
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="outline" onClick={onCancel}>Annulla</Button>
-        <Button type="submit" className="bg-gradient-accent text-accent-foreground hover:opacity-90">{submitLabel}</Button>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>Annulla</Button>
+        <Button type="submit" disabled={submitting} className="bg-gradient-accent text-accent-foreground hover:opacity-90">
+          {submitting ? "Salvataggio…" : submitLabel}
+        </Button>
       </div>
     </form>
   );
