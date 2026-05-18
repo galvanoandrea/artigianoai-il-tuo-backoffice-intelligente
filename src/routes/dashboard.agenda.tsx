@@ -72,17 +72,17 @@ const TYPE_LABELS: Record<AppointmentType, string> = {
 };
 
 const TYPE_COLORS: Record<AppointmentType, string> = {
-  sopralluogo: "bg-blue-100 text-blue-800 border-transparent",
-  lavoro: "bg-emerald-100 text-emerald-800 border-transparent",
-  appuntamento: "bg-primary/15 text-primary border-transparent",
+  sopralluogo: "bg-blue-100 text-blue-800 border-transparent dark:bg-blue-900/40 dark:text-blue-300",
+  lavoro: "bg-emerald-100 text-emerald-800 border-transparent dark:bg-emerald-900/40 dark:text-emerald-300",
+  appuntamento: "bg-violet-100 text-violet-800 border-transparent dark:bg-violet-900/40 dark:text-violet-300",
   altro: "bg-muted text-muted-foreground border-transparent",
 };
 
-const TYPE_DOT_COLORS: Record<AppointmentType, string> = {
-  sopralluogo: "bg-blue-500",
-  lavoro: "bg-emerald-500",
-  appuntamento: "bg-primary",
-  altro: "bg-muted-foreground",
+const TYPE_PILL: Record<AppointmentType, string> = {
+  sopralluogo: "bg-blue-500 text-white",
+  lavoro: "bg-emerald-500 text-white",
+  appuntamento: "bg-violet-500 text-white",
+  altro: "bg-slate-400 text-white",
 };
 
 function toIsoDate(d: Date): string {
@@ -228,50 +228,50 @@ function AgendaPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    <div className="flex flex-col gap-4">
       {/* Page header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 grid place-items-center">
-          <CalendarDays className="w-5 h-5 text-primary" />
+        <div className="w-10 h-10 rounded-xl bg-gradient-accent grid place-items-center shadow-glow">
+          <CalendarDays className="w-5 h-5 text-accent-foreground" />
         </div>
         <div>
           <h1 className="text-2xl font-bold">Agenda</h1>
-          <p className="text-sm text-muted-foreground">Gestisci i tuoi appuntamenti</p>
+          <p className="text-sm text-muted-foreground">Gestisci appuntamenti e sopralluoghi</p>
         </div>
       </div>
 
       {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Calendar: 2/3 */}
         <div className="lg:col-span-2">
           <Card>
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-2 pt-3 px-4">
               <div className="flex items-center justify-between">
-                <Button variant="ghost" size="icon" onClick={prevMonth}>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={prevMonth}>
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <CardTitle className="text-lg">
+                <CardTitle className="text-base font-semibold">
                   {MONTHS_IT[currentMonth]} {currentYear}
                 </CardTitle>
-                <Button variant="ghost" size="icon" onClick={nextMonth}>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={nextMonth}>
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 pb-3">
               {/* Day headers */}
-              <div className="grid grid-cols-7 mb-2">
+              <div className="grid grid-cols-7 mb-1">
                 {DAYS_IT.map((d) => (
-                  <div key={d} className="text-center text-xs font-medium text-muted-foreground py-1">
+                  <div key={d} className="text-center text-[11px] font-medium text-muted-foreground py-1">
                     {d}
                   </div>
                 ))}
               </div>
               {/* Day cells */}
-              <div className="grid grid-cols-7 gap-1">
+              <div className="grid grid-cols-7 gap-px">
                 {calendarDays.map((cell, idx) => {
                   if (!cell.iso) {
-                    return <div key={idx} className="aspect-square" />;
+                    return <div key={idx} className="min-h-[68px]" />;
                   }
                   const cellAppts = appointmentsByDate.get(cell.iso) ?? [];
                   const isToday = cell.iso === todayIso;
@@ -281,27 +281,33 @@ function AgendaPage() {
                       key={cell.iso}
                       onClick={() => setSelectedDay(cell.iso!)}
                       className={[
-                        "aspect-square rounded-lg flex flex-col items-center justify-start p-1 text-sm transition-colors",
-                        isToday ? "bg-accent text-accent-foreground font-bold" : "hover:bg-muted",
-                        isSelected ? "ring-2 ring-primary" : "",
+                        "min-h-[68px] w-full rounded-md flex flex-col items-start p-1 transition-colors text-left",
+                        isSelected ? "bg-primary/8 ring-1 ring-primary" : "hover:bg-muted/60",
                       ].join(" ")}
                     >
-                      <span className="leading-tight">{cell.day}</span>
-                      {cellAppts.length > 0 && (
-                        <div className="flex gap-0.5 mt-0.5 flex-wrap justify-center">
-                          {cellAppts.slice(0, 3).map((a) => (
-                            <span
-                              key={a.id}
-                              className={`w-1.5 h-1.5 rounded-full ${TYPE_DOT_COLORS[a.type]}`}
-                            />
-                          ))}
-                          {cellAppts.length > 3 && (
-                            <span className="text-[9px] text-muted-foreground leading-none">
-                              +{cellAppts.length - 3}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                      {/* Day number */}
+                      <span className={[
+                        "w-5 h-5 flex items-center justify-center rounded-full text-xs mb-0.5 font-medium",
+                        isToday ? "bg-primary text-primary-foreground font-bold" : "text-foreground",
+                      ].join(" ")}>
+                        {cell.day}
+                      </span>
+                      {/* Appointment pills */}
+                      <div className="w-full flex flex-col gap-px">
+                        {cellAppts.slice(0, 2).map((a) => (
+                          <div
+                            key={a.id}
+                            className={`w-full text-[10px] leading-tight px-1 py-px rounded truncate font-medium ${TYPE_PILL[a.type]}`}
+                          >
+                            {a.title}
+                          </div>
+                        ))}
+                        {cellAppts.length > 2 && (
+                          <span className="text-[10px] text-muted-foreground px-1">
+                            +{cellAppts.length - 2} altri
+                          </span>
+                        )}
+                      </div>
                     </button>
                   );
                 })}
