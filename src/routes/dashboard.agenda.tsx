@@ -116,7 +116,7 @@ function AgendaPage() {
 
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth()); // 0-based
-  const [selectedDay, setSelectedDay] = useState<string>(todayIso);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
@@ -159,7 +159,7 @@ function AgendaPage() {
   }, [appointments]);
 
   const selectedDayAppointments = useMemo(
-    () => appointmentsByDate.get(selectedDay) ?? [],
+    () => (selectedDay ? appointmentsByDate.get(selectedDay) ?? [] : []),
     [appointmentsByDate, selectedDay]
   );
 
@@ -174,7 +174,7 @@ function AgendaPage() {
 
   function openCreate() {
     setEditing(null);
-    setForm({ ...EMPTY_FORM, date: selectedDay });
+    setForm({ ...EMPTY_FORM, date: selectedDay ?? todayIso });
     setDialogOpen(true);
   }
 
@@ -275,20 +275,24 @@ function AgendaPage() {
                   }
                   const cellAppts = appointmentsByDate.get(cell.iso) ?? [];
                   const isToday = cell.iso === todayIso;
-                  const isSelected = cell.iso === selectedDay;
+                  const isSelected = cell.iso === selectedDay && selectedDay !== null;
                   return (
                     <button
                       key={cell.iso}
                       onClick={() => setSelectedDay(cell.iso!)}
                       className={[
-                        "min-h-[68px] w-full rounded-md flex flex-col items-start p-1 transition-colors text-left",
-                        isSelected ? "bg-primary/8 ring-1 ring-primary" : "hover:bg-muted/60",
+                        "min-h-[68px] w-full rounded-md flex flex-col items-start p-1 transition-colors text-left border",
+                        isSelected
+                          ? "border-primary bg-muted/40"
+                          : "border-transparent hover:bg-muted/40",
                       ].join(" ")}
                     >
                       {/* Day number */}
                       <span className={[
-                        "w-5 h-5 flex items-center justify-center rounded-full text-xs mb-0.5 font-medium",
-                        isToday ? "bg-primary text-primary-foreground font-bold" : "text-foreground",
+                        "w-5 h-5 flex items-center justify-center rounded-full text-xs mb-0.5",
+                        isToday
+                          ? "bg-primary text-primary-foreground font-bold"
+                          : "text-foreground font-medium",
                       ].join(" ")}>
                         {cell.day}
                       </span>
@@ -318,6 +322,16 @@ function AgendaPage() {
 
         {/* Right panel: 1/3 */}
         <div className="lg:col-span-1 flex flex-col gap-3">
+          {!selectedDay ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground gap-3">
+              <CalendarDays className="w-10 h-10 opacity-20" />
+              <p className="text-sm">Seleziona un giorno per vedere<br />o aggiungere appuntamenti</p>
+              <Button size="sm" variant="outline" onClick={openCreate}>
+                <Plus className="w-4 h-4 mr-1" /> Nuovo appuntamento
+              </Button>
+            </div>
+          ) : (
+          <>
           <div className="flex items-center justify-between">
             <div>
               <p className="font-semibold text-sm">{formatDateLong(selectedDay)}</p>
@@ -327,14 +341,14 @@ function AgendaPage() {
             </div>
             <Button size="sm" onClick={openCreate}>
               <Plus className="w-4 h-4 mr-1" />
-              Nuovo appuntamento
+              Nuovo
             </Button>
           </div>
 
           {selectedDayAppointments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground gap-2">
-              <CalendarDays className="w-8 h-8 opacity-30" />
-              <p className="text-sm">Nessun appuntamento per questo giorno</p>
+            <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground gap-2">
+              <CalendarDays className="w-7 h-7 opacity-30" />
+              <p className="text-sm">Nessun appuntamento</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
@@ -390,6 +404,8 @@ function AgendaPage() {
                 );
               })}
             </div>
+          )}
+          </>
           )}
         </div>
       </div>
