@@ -3,16 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Wrench, Users, FileText, Sparkles, ShieldCheck, Clock, ArrowRight,
-  CheckCircle2, Building2, Zap, Star, ChevronDown, Phone, Mail,
-  Package, BarChart3, Printer,
+  Building2, Zap, Star, Package, BarChart3, Printer,
 } from "lucide-react";
-import { useState } from "react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "ArtigianoAI — Il backoffice intelligente per artigiani italiani" },
-      { name: "description", content: "Gestisci clienti, preventivi e fornitori in pochi tap. 1 mese gratis, poi 19,90€/mese. Pensato per elettricisti, idraulici, imprese edili e installatori." },
+      { name: "description", content: "Gestisci clienti, preventivi e fornitori in pochi tap. Pensato per elettricisti, idraulici, imprese edili e installatori italiani." },
     ],
   }),
   component: Index,
@@ -62,54 +60,11 @@ const features = [
 ];
 
 const steps = [
-  { n: "1", title: "Registrati gratis", text: "Crea il tuo account in 30 secondi. Nessuna carta di credito richiesta per il mese di prova." },
-  { n: "2", title: "Configura il profilo", text: "Inserisci nome azienda, P.IVA, indirizzo e recapiti. Appariranno automaticamente su ogni preventivo." },
+  { n: "1", title: "Registrati", text: "Crea il tuo account in 30 secondi. Nessuna installazione richiesta." },
+  { n: "2", title: "Configura il profilo", text: "Inserisci nome azienda, P.IVA, indirizzo e recapiti. Appariranno su ogni preventivo." },
   { n: "3", title: "Aggiungi clienti", text: "Inserisci i tuoi clienti con tutti i dati. Bastano pochi secondi per ogni anagrafica." },
   { n: "4", title: "Crea preventivi", text: "Scegli il cliente, aggiungi le voci di lavoro, applica l'IVA. Il preventivo è pronto." },
 ];
-
-const faqs = [
-  {
-    q: "Come funziona il mese gratuito?",
-    a: "Registri il tuo account e usi ArtigianoAI gratuitamente per 30 giorni completi, senza inserire alcun metodo di pagamento. Al termine del periodo di prova, scegli se continuare a €19,90/mese.",
-  },
-  {
-    q: "Posso cancellare quando voglio?",
-    a: "Sì, puoi cancellare l'abbonamento in qualsiasi momento, senza penali o vincoli. I tuoi dati rimangono disponibili fino alla scadenza del periodo pagato.",
-  },
-  {
-    q: "Funziona da smartphone?",
-    a: "Sì, ArtigianoAI è completamente responsive e funziona su qualsiasi dispositivo: smartphone, tablet o PC.",
-  },
-  {
-    q: "Posso aggiungere altri utenti alla mia azienda?",
-    a: "Sì. Come admin puoi invitare collaboratori e gestire i loro accessi in qualsiasi momento.",
-  },
-  {
-    q: "I miei dati sono al sicuro?",
-    a: "I dati sono ospitati su infrastruttura cloud europea (Supabase/AWS) con backup automatici, crittografia e accesso protetto.",
-  },
-  {
-    q: "Serve installare qualcosa?",
-    a: "No. ArtigianoAI è un'applicazione web: si apre dal browser come qualsiasi sito, da qualsiasi dispositivo.",
-  },
-];
-
-function FaqItem({ q, a }: { q: string; a: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="border-b border-border last:border-0">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between py-5 text-left gap-4 hover:text-foreground/80 transition-colors"
-      >
-        <span className="font-medium text-foreground">{q}</span>
-        <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
-      </button>
-      {open && <p className="text-muted-foreground pb-5 text-sm leading-relaxed">{a}</p>}
-    </div>
-  );
-}
 
 function Index() {
   return (
@@ -127,15 +82,13 @@ function Index() {
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#funzionalita" className="hover:text-foreground transition-colors">Funzionalità</a>
             <a href="#come-funziona" className="hover:text-foreground transition-colors">Come funziona</a>
-            <a href="#prezzi" className="hover:text-foreground transition-colors">Prezzi</a>
-            <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
           </nav>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="sm">
               <Link to="/login">Accedi</Link>
             </Button>
             <Button asChild size="sm" className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow">
-              <Link to="/signup">Prova gratis</Link>
+              <Link to="/signup">Registrati</Link>
             </Button>
           </div>
         </div>
@@ -156,28 +109,18 @@ function Index() {
             <h1 className="text-4xl md:text-6xl font-bold leading-[1.1] tracking-tight mb-6">
               Meno carta,<br />più <span className="text-accent">cantiere</span>.
             </h1>
-            <p className="text-lg md:text-xl text-white/80 mb-4 max-w-2xl">
+            <p className="text-lg md:text-xl text-white/80 mb-8 max-w-2xl">
               Clienti, preventivi e fornitori sempre in ordine. ArtigianoAI è il gestionale pensato per chi lavora con le mani: elettricisti, idraulici, imprese edili, installatori.
             </p>
-            <p className="text-white/60 mb-8 text-base">
-              Nessun corso. Nessuna installazione. Apri dal browser e parti.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 mb-10">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Button asChild size="lg" className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow text-base h-14 px-8">
                 <Link to="/signup">
-                  Inizia 1 mese gratis <ArrowRight className="ml-2 w-5 h-5" />
+                  Registrati <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-base h-14 px-8">
-                <a href="#come-funziona">Scopri come funziona</a>
+                <Link to="/login">Accedi</Link>
               </Button>
-            </div>
-            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/60">
-              {["1 mese gratis", "Nessuna carta di credito", "Disdici quando vuoi"].map((t) => (
-                <span key={t} className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-accent" /> {t}
-                </span>
-              ))}
             </div>
           </div>
         </div>
@@ -231,7 +174,7 @@ function Index() {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {steps.map((s) => (
-              <div key={s.n} className="relative">
+              <div key={s.n}>
                 <div className="w-12 h-12 rounded-2xl bg-gradient-accent grid place-items-center shadow-glow mb-4 text-accent-foreground font-bold text-lg">
                   {s.n}
                 </div>
@@ -239,75 +182,6 @@ function Index() {
                 <p className="text-muted-foreground text-sm leading-relaxed">{s.text}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── PRICING ── */}
-      <section id="prezzi" className="container mx-auto px-4 py-20">
-        <div className="text-center max-w-2xl mx-auto mb-14">
-          <Badge variant="outline" className="mb-4 text-xs uppercase tracking-wide">Prezzi</Badge>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Un prezzo semplice, tutto incluso</h2>
-          <p className="text-muted-foreground text-lg">Nessun costo nascosto. Nessun modulo a pagamento.</p>
-        </div>
-
-        <div className="max-w-md mx-auto">
-          <div className="relative rounded-3xl border-2 border-accent bg-card p-8 shadow-elegant">
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-              <Badge className="bg-gradient-accent text-accent-foreground shadow-glow px-4 py-1 text-sm font-semibold">
-                1 mese gratis
-              </Badge>
-            </div>
-
-            <div className="text-center mb-8 pt-2">
-              <p className="text-muted-foreground text-sm mb-1">Poi solo</p>
-              <div className="flex items-end justify-center gap-1">
-                <span className="text-6xl font-bold text-foreground">19,90</span>
-                <span className="text-2xl font-semibold text-muted-foreground mb-2">€</span>
-              </div>
-              <p className="text-muted-foreground text-sm">al mese · IVA esclusa</p>
-            </div>
-
-            <ul className="space-y-3 mb-8">
-              {[
-                "Clienti illimitati",
-                "Preventivi illimitati",
-                "Gestione fornitori",
-                "Stampa e PDF preventivi",
-                "Intestazione personalizzata con i tuoi dati azienda",
-                "Accesso da qualsiasi dispositivo",
-                "Assistenza via email",
-                "Aggiornamenti inclusi",
-                "Dati sicuri sul cloud",
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-3 text-sm">
-                  <CheckCircle2 className="w-4 h-4 text-accent shrink-0" />
-                  <span className="text-foreground">{item}</span>
-                </li>
-              ))}
-            </ul>
-
-            <Button asChild size="lg" className="w-full h-13 bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow text-base font-semibold">
-              <Link to="/signup">
-                Inizia il mese gratuito <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
-            </Button>
-            <p className="text-center text-xs text-muted-foreground mt-3">
-              Nessuna carta di credito richiesta · Disdici quando vuoi
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FAQ ── */}
-      <section id="faq" className="bg-muted/30 border-y border-border py-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-2xl mx-auto mb-14">
-            <Badge variant="outline" className="mb-4 text-xs uppercase tracking-wide">FAQ</Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Domande frequenti</h2>
-          </div>
-          <div className="max-w-2xl mx-auto bg-card rounded-2xl border border-border px-6">
-            {faqs.map((f) => <FaqItem key={f.q} {...f} />)}
           </div>
         </div>
       </section>
@@ -321,42 +195,24 @@ function Index() {
           />
           <div className="relative">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Pronto a lavorare meglio?</h2>
-            <p className="text-white/80 text-lg mb-2 max-w-xl mx-auto">
-              Prova ArtigianoAI gratis per 30 giorni. Nessun impegno, nessuna carta di credito.
+            <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
+              Inizia subito a gestire clienti e preventivi in modo professionale.
             </p>
-            <p className="text-white/60 mb-8 text-sm">Poi solo €19,90/mese. Tutto incluso.</p>
-            <Button asChild size="lg" className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow h-14 px-10 text-base font-semibold">
-              <Link to="/signup">Inizia gratis <ArrowRight className="ml-2 w-5 h-5" /></Link>
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button asChild size="lg" className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow h-14 px-10 text-base font-semibold">
+                <Link to="/signup">Registrati <ArrowRight className="ml-2 w-5 h-5" /></Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-base h-14 px-8">
+                <Link to="/login">Accedi</Link>
+              </Button>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="border-t border-border py-10">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-accent grid place-items-center shadow-glow">
-                <Wrench className="w-4 h-4 text-accent-foreground" />
-              </div>
-              <span className="font-bold text-foreground">ArtigianoAI</span>
-            </Link>
-            <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <a href="#funzionalita" className="hover:text-foreground transition-colors">Funzionalità</a>
-              <a href="#prezzi" className="hover:text-foreground transition-colors">Prezzi</a>
-              <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
-              <Link to="/login" className="hover:text-foreground transition-colors">Accedi</Link>
-            </div>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5"><Mail className="w-4 h-4" /> info@artigianoai.it</span>
-              <span className="flex items-center gap-1.5"><Phone className="w-4 h-4" /> +39 02 0000000</span>
-            </div>
-          </div>
-          <div className="mt-6 pt-6 border-t border-border text-center text-xs text-muted-foreground">
-            © {new Date().getFullYear()} ArtigianoAI — Fatto con cura in Italia
-          </div>
-        </div>
+      <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
+        © {new Date().getFullYear()} ArtigianoAI — Fatto con cura in Italia
       </footer>
 
     </div>
