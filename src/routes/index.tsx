@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Wrench, Users, FileText, Sparkles, ShieldCheck, Clock, ArrowRight,
   CheckCircle2, Building2, Zap, Star, ChevronDown, Phone, Mail,
-  Package, BarChart3, Printer, UserCheck,
+  Package, BarChart3, Printer,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -27,17 +27,12 @@ const features = [
   {
     icon: FileText,
     title: "Preventivi professionali",
-    text: "Crea preventivi con logo e dati azienda, voci dettagliate, IVA automatica. Stampa o salva PDF in un clic.",
+    text: "Crea preventivi con i tuoi dati azienda, voci dettagliate, IVA automatica. Pronti in meno di un minuto.",
   },
   {
     icon: Package,
     title: "Gestione fornitori",
     text: "Tieni traccia di tutti i tuoi fornitori, contatti e materiali. Tutto in un posto solo.",
-  },
-  {
-    icon: UserCheck,
-    title: "Multi-utente con controllo",
-    text: "Aggiungi collaboratori al tuo account. Tu decidi chi può accedere e puoi bloccarli in qualsiasi momento.",
   },
   {
     icon: Printer,
@@ -53,6 +48,11 @@ const features = [
     icon: Zap,
     title: "Veloce da usare",
     text: "Interfaccia pensata per chi lavora con le mani, non per informatici. Nessun corso necessario.",
+  },
+  {
+    icon: Clock,
+    title: "Risparmia tempo",
+    text: "Smetti di riscrivere gli stessi dati a mano. Clienti e voci di lavoro riutilizzabili in ogni preventivo.",
   },
   {
     icon: BarChart3,
@@ -273,9 +273,8 @@ function Index() {
                 "Clienti illimitati",
                 "Preventivi illimitati",
                 "Gestione fornitori",
-                "Multi-utente (aggiungi collaboratori)",
                 "Stampa e PDF preventivi",
-                "Intestazione personalizzata con logo aziendale",
+                "Intestazione personalizzata con i tuoi dati azienda",
                 "Accesso da qualsiasi dispositivo",
                 "Assistenza via email",
                 "Aggiornamenti inclusi",
