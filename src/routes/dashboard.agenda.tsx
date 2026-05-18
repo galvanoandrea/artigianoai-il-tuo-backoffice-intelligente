@@ -291,7 +291,7 @@ function AgendaPage() {
                       <span className={[
                         "w-5 h-5 flex items-center justify-center rounded-full text-xs mb-0.5",
                         isToday
-                          ? "bg-primary text-primary-foreground font-bold"
+                          ? "bg-accent text-accent-foreground font-bold"
                           : "text-foreground font-medium",
                       ].join(" ")}>
                         {cell.day}
