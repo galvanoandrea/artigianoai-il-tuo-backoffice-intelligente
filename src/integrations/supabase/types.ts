@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          description: string | null
+          date: string
+          time_start: string | null
+          time_end: string | null
+          client_id: string | null
+          type: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          description?: string | null
+          date: string
+          time_start?: string | null
+          time_end?: string | null
+          client_id?: string | null
+          type?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          description?: string | null
+          date?: string
+          time_start?: string | null
+          time_end?: string | null
+          client_id?: string | null
+          type?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           approved: boolean

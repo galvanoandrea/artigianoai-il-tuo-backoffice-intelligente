@@ -23,6 +23,7 @@ import { Route as DashboardImpostazioniRouteImport } from './routes/dashboard.im
 import { Route as DashboardFornitoriRouteImport } from './routes/dashboard.fornitori'
 import { Route as DashboardClientiRouteImport } from './routes/dashboard.clienti'
 import { Route as DashboardAdminRouteImport } from './routes/dashboard.admin'
+import { Route as DashboardAgendaRouteImport } from './routes/dashboard.agenda'
 
 const AcceptInviteRoute = AcceptInviteRouteImport.update({
   id: '/accept-invite',
@@ -94,6 +95,11 @@ const DashboardAdminRoute = DashboardAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardAgendaRoute = DashboardAgendaRouteImport.update({
+  id: '/agenda',
+  path: '/agenda',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard/admin': typeof DashboardAdminRoute
+  '/dashboard/agenda': typeof DashboardAgendaRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
   '/dashboard/fornitori': typeof DashboardFornitoriRoute
   '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard/admin': typeof DashboardAdminRoute
+  '/dashboard/agenda': typeof DashboardAgendaRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
   '/dashboard/fornitori': typeof DashboardFornitoriRoute
   '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard/admin': typeof DashboardAdminRoute
+  '/dashboard/agenda': typeof DashboardAgendaRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
   '/dashboard/fornitori': typeof DashboardFornitoriRoute
   '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/dashboard/admin'
+    | '/dashboard/agenda'
     | '/dashboard/clienti'
     | '/dashboard/fornitori'
     | '/dashboard/impostazioni'
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/dashboard/admin'
+    | '/dashboard/agenda'
     | '/dashboard/clienti'
     | '/dashboard/fornitori'
     | '/dashboard/impostazioni'
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/dashboard/admin'
+    | '/dashboard/agenda'
     | '/dashboard/clienti'
     | '/dashboard/fornitori'
     | '/dashboard/impostazioni'
@@ -304,11 +316,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/agenda': {
+      id: '/dashboard/agenda'
+      path: '/agenda'
+      fullPath: '/dashboard/agenda'
+      preLoaderRoute: typeof DashboardAgendaRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
 interface DashboardRouteChildren {
   DashboardAdminRoute: typeof DashboardAdminRoute
+  DashboardAgendaRoute: typeof DashboardAgendaRoute
   DashboardClientiRoute: typeof DashboardClientiRoute
   DashboardFornitoriRoute: typeof DashboardFornitoriRoute
   DashboardImpostazioniRoute: typeof DashboardImpostazioniRoute
@@ -318,6 +338,7 @@ interface DashboardRouteChildren {
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAdminRoute: DashboardAdminRoute,
+  DashboardAgendaRoute: DashboardAgendaRoute,
   DashboardClientiRoute: DashboardClientiRoute,
   DashboardFornitoriRoute: DashboardFornitoriRoute,
   DashboardImpostazioniRoute: DashboardImpostazioniRoute,
