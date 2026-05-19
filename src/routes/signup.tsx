@@ -51,6 +51,12 @@ function SignupPage() {
       toast.error("Registrazione fallita", { description: error.message });
       return;
     }
+    // Notifica admin in background — non blocca il flusso anche se fallisce
+    fetch("/api/notify-admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userEmail: email, userName: nomeCompleto, userAzienda: nomeAzienda }),
+    }).catch(() => {});
     toast.success("Account creato! In attesa di approvazione.");
     navigate({ to: "/pending-approval" });
   };
