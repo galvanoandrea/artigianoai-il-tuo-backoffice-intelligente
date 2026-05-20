@@ -15,7 +15,7 @@ jobs:
       - name: Apply migration
         run: |
           set -e
-          PAT=$(echo "c2JwXzYyOGJmOTlmY2YyYWFhNWU0MThmZDkyOTQzNjdmZjgwMWQ1NjZlYTk=" | base64 -d)
+          PAT="${{ secrets.SUPABASE_PAT }}"
           REF="gitmclidlmwhmhgdsodl"
           API="https://api.supabase.com/v1/projects/${REF}/database/query"
 

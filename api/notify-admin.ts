@@ -1,5 +1,14 @@
 import nodemailer from "nodemailer";
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
@@ -8,13 +17,21 @@ export default async function handler(req: any, res: any) {
 
   const smtpUser = process.env.GMAIL_USER;
   const smtpPass = process.env.GMAIL_APP_PASSWORD;
-  const adminEmail = process.env.ADMIN_EMAIL ?? "andreagalva@hotmail.it";
+  const adminEmail = process.env.ADMIN_EMAIL;
+
+  if (!adminEmail) {
+    console.warn("ADMIN_EMAIL not set, skip email notification");
+    return res.json({ ok: true, skipped: true });
+  }
 
   if (!smtpUser || !smtpPass) {
-    // Log but don't fail hard — registration already succeeded
     console.warn("GMAIL_USER or GMAIL_APP_PASSWORD not set, skip email notification");
     return res.json({ ok: true, skipped: true });
   }
+
+  const safeEmail = escapeHtml(String(userEmail));
+  const safeName = userName ? escapeHtml(String(userName)) : "";
+  const safeAzienda = userAzienda ? escapeHtml(String(userAzienda)) : "";
 
   try {
     const transporter = nodemailer.createTransport({
@@ -22,29 +39,29 @@ export default async function handler(req: any, res: any) {
       auth: { user: smtpUser, pass: smtpPass },
     });
 
-    const displayName = [userName, userAzienda].filter(Boolean).join(" — ") || userEmail;
+    const displayName = [safeName, safeAzienda].filter(Boolean).join(" — ") || safeEmail;
 
     await transporter.sendMail({
       from: `"ArtigianoAI" <${smtpUser}>`,
       to: adminEmail,
-      subject: "🔔 Nuova registrazione in attesa di approvazione",
+      subject: "Nuova registrazione in attesa di approvazione",
       html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
           <h2 style="color: #1a1a1a; margin-bottom: 8px;">Nuova registrazione</h2>
           <p style="color: #555; margin-bottom: 24px;">Un nuovo utente si è registrato su ArtigianoAI e sta aspettando la tua approvazione.</p>
 
           <div style="background: #f5f5f5; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
-            <p style="margin: 0 0 6px; color: #333;"><strong>Email:</strong> ${userEmail}</p>
-            ${userName ? `<p style="margin: 0 0 6px; color: #333;"><strong>Nome:</strong> ${userName}</p>` : ""}
-            ${userAzienda ? `<p style="margin: 0; color: #333;"><strong>Azienda:</strong> ${userAzienda}</p>` : ""}
+            <p style="margin: 0 0 6px; color: #333;"><strong>Email:</strong> ${safeEmail}</p>
+            ${safeName ? `<p style="margin: 0 0 6px; color: #333;"><strong>Nome:</strong> ${safeName}</p>` : ""}
+            ${safeAzienda ? `<p style="margin: 0; color: #333;"><strong>Azienda:</strong> ${safeAzienda}</p>` : ""}
           </div>
 
-          <a href="${process.env.APP_URL ?? "https://artigianoai.vercel.app"}/dashboard/admin"
+          <a href="${escapeHtml(process.env.APP_URL ?? "https://artigianoai.vercel.app")}/dashboard/admin"
              style="display: inline-block; background: #f97316; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-            Vai al pannello Admin →
+            Vai al pannello Admin &rarr;
           </a>
 
-          <p style="color: #999; font-size: 12px; margin-top: 24px;">ArtigianoAI · notifica automatica</p>
+          <p style="color: #999; font-size: 12px; margin-top: 24px;">ArtigianoAI &middot; notifica automatica</p>
         </div>
       `,
     });

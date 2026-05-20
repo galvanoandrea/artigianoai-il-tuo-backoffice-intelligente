@@ -51,6 +51,7 @@ export default async function handler(req: any, res: any) {
   if (req.method === "POST") {
     const { email, redirectTo } = req.body ?? {};
     if (!email || !redirectTo) return res.status(400).json({ error: "Missing email or redirectTo" });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: "Invalid email" });
     const { error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo });
     if (error) return res.json({ ok: false, error: error.message });
     return res.json({ ok: true });

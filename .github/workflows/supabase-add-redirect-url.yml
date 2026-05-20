@@ -15,7 +15,7 @@ jobs:
       - name: Leggi config attuale e aggiorna redirect URLs
         run: |
           set -e
-          PAT=$(echo "c2JwXzYyOGJmOTlmY2YyYWFhNWU0MThmZDkyOTQzNjdmZjgwMWQ1NjZlYTk=" | base64 -d)
+          PAT="${{ secrets.SUPABASE_PAT }}"
           REF="gitmclidlmwhmhgdsodl"
 
           # Leggi config attuale per ottenere site_url
