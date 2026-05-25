@@ -7,11 +7,148 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Save } from "lucide-react";
+import { Save, CalendarClock, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
+
+const TRIAL_DAYS = 30;
 
 export const Route = createFileRoute("/dashboard/impostazioni")({
   component: ImpostazioniPage,
 });
+
+type TrialStatus =
+  | { state: "pending" }
+  | { state: "active"; daysLeft: number; expiresAt: Date }
+  | { state: "expiring_soon"; daysLeft: number; expiresAt: Date }
+  | { state: "expired"; expiredDaysAgo: number };
+
+function computeTrialStatus(approvedAt: string | null | undefined): TrialStatus {
+  if (!approvedAt) return { state: "pending" };
+  const start = new Date(approvedAt);
+  const expiresAt = new Date(start.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+  const now = new Date();
+  const msLeft = expiresAt.getTime() - now.getTime();
+  const daysLeft = Math.ceil(msLeft / (24 * 60 * 60 * 1000));
+  if (daysLeft > 7) return { state: "active", daysLeft, expiresAt };
+  if (daysLeft > 0) return { state: "expiring_soon", daysLeft, expiresAt };
+  return { state: "expired", expiredDaysAgo: Math.abs(daysLeft) };
+}
+
+function TrialCard({ approvedAt }: { approvedAt: string | null | undefined }) {
+  const status = computeTrialStatus(approvedAt);
+
+  const formatDate = (d: Date) =>
+    d.toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" });
+
+  if (status.state === "pending") {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CalendarClock className="w-4 h-4 text-muted-foreground" /> Abbonamento
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3 text-muted-foreground text-sm">
+            <Clock className="w-4 h-4 shrink-0" />
+            <span>In attesa di approvazione. Il periodo di prova partirà non appena l'amministratore attiverà il tuo account.</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (status.state === "active") {
+    return (
+      <Card className="border-emerald-200 dark:border-emerald-800">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CalendarClock className="w-4 h-4 text-emerald-600" /> Abbonamento
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            <div>
+              <p className="font-semibold text-emerald-700 dark:text-emerald-400">
+                Periodo di prova attivo — {status.daysLeft} giorni rimanenti
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Scade il {formatDate(status.expiresAt)}
+              </p>
+            </div>
+          </div>
+          <div className="h-2 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-emerald-500 transition-all"
+              style={{ width: `${Math.round((status.daysLeft / TRIAL_DAYS) * 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Alla scadenza del periodo di prova gratuito, l'abbonamento mensile è di <strong>€&nbsp;19,90/mese</strong>. Contatta l'amministratore per continuare ad usare la piattaforma.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (status.state === "expiring_soon") {
+    return (
+      <Card className="border-amber-300 dark:border-amber-700">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CalendarClock className="w-4 h-4 text-amber-600" /> Abbonamento
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+            <div>
+              <p className="font-semibold text-amber-700 dark:text-amber-400">
+                Periodo di prova in scadenza — {status.daysLeft} {status.daysLeft === 1 ? "giorno" : "giorni"} rimanenti
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Scade il {formatDate(status.expiresAt)}
+              </p>
+            </div>
+          </div>
+          <div className="h-2 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-amber-400 transition-all"
+              style={{ width: `${Math.round((status.daysLeft / TRIAL_DAYS) * 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Contatta l'amministratore per attivare l'abbonamento mensile a <strong>€&nbsp;19,90/mese</strong> e continuare ad usare la piattaforma senza interruzioni.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // expired
+  return (
+    <Card className="border-destructive/40">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <CalendarClock className="w-4 h-4 text-destructive" /> Abbonamento
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+          <div>
+            <p className="font-semibold text-destructive">
+              Periodo di prova scaduto {status.expiredDaysAgo > 0 ? `${status.expiredDaysAgo} giorni fa` : "oggi"}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Contatta l'amministratore per attivare l'abbonamento mensile a <strong>€&nbsp;19,90/mese</strong>.
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 type ProfileForm = {
   nome: string;
@@ -30,6 +167,7 @@ function ImpostazioniPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [approvedAt, setApprovedAt] = useState<string | null | undefined>(undefined);
   const [form, setForm] = useState<ProfileForm>({
     nome: "",
     cognome: "",
@@ -55,6 +193,7 @@ function ImpostazioniPage() {
       if (error) {
         toast.error("Errore nel caricamento del profilo");
       } else if (data) {
+        setApprovedAt((data as any).approved_at ?? null);
         let nome = (data as any).nome ?? "";
         let cognome = (data as any).cognome ?? "";
         if (!nome && !cognome && (data as any).nome_completo) {
@@ -126,6 +265,8 @@ function ImpostazioniPage() {
           Gestisci i dati del tuo profilo e della tua azienda.
         </p>
       </div>
+
+      <TrialCard approvedAt={approvedAt} />
 
       <Card>
         <CardHeader>

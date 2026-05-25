@@ -64,9 +64,11 @@ export default async function handler(req: any, res: any) {
     if (targetUserId === userId) return res.status(400).json({ error: "Non puoi modificare te stesso" });
 
     if (action === "approve" || action === "reject") {
+      const patch: Record<string, unknown> = { approved: action === "approve" };
+      if (action === "approve") patch.approved_at = new Date().toISOString();
       const { error } = await admin
         .from("profiles")
-        .update({ approved: action === "approve" })
+        .update(patch)
         .eq("id", targetUserId);
       if (error) return res.json({ ok: false, error: error.message });
       return res.json({ ok: true });
