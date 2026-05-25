@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SubscribeSuccessRouteImport } from './routes/subscribe-success'
 import { Route as AcceptInviteRouteImport } from './routes/accept-invite'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as PendingApprovalRouteImport } from './routes/pending-approval'
@@ -25,6 +26,11 @@ import { Route as DashboardClientiRouteImport } from './routes/dashboard.clienti
 import { Route as DashboardAdminRouteImport } from './routes/dashboard.admin'
 import { Route as DashboardAgendaRouteImport } from './routes/dashboard.agenda'
 
+const SubscribeSuccessRoute = SubscribeSuccessRouteImport.update({
+  id: '/subscribe-success',
+  path: '/subscribe-success',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AcceptInviteRoute = AcceptInviteRouteImport.update({
   id: '/accept-invite',
   path: '/accept-invite',
@@ -104,6 +110,7 @@ const DashboardAgendaRoute = DashboardAgendaRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/subscribe-success': typeof SubscribeSuccessRoute
   '/accept-invite': typeof AcceptInviteRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/subscribe-success': typeof SubscribeSuccessRoute
   '/accept-invite': typeof AcceptInviteRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
@@ -138,6 +146,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/subscribe-success': typeof SubscribeSuccessRoute
   '/accept-invite': typeof AcceptInviteRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/subscribe-success'
     | '/accept-invite'
     | '/forgot-password'
     | '/login'
@@ -173,6 +183,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/subscribe-success'
     | '/accept-invite'
     | '/forgot-password'
     | '/login'
@@ -190,6 +201,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/subscribe-success'
     | '/accept-invite'
     | '/forgot-password'
     | '/login'
@@ -208,6 +220,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRouteWithChildren
+  SubscribeSuccessRoute: typeof SubscribeSuccessRoute
   AcceptInviteRoute: typeof AcceptInviteRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
@@ -218,6 +231,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/subscribe-success': {
+      id: '/subscribe-success'
+      path: '/subscribe-success'
+      fullPath: '/subscribe-success'
+      preLoaderRoute: typeof SubscribeSuccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/accept-invite': {
       id: '/accept-invite'
       path: '/accept-invite'
@@ -353,6 +373,7 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRouteWithChildren,
+  SubscribeSuccessRoute: SubscribeSuccessRoute,
   AcceptInviteRoute: AcceptInviteRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
