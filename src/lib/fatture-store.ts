@@ -65,7 +65,7 @@ const fatturaToRow = (f: Omit<Fattura, "id" | "numero">) => ({
     descrizione: v.descrizione,
     quantita: v.quantita,
     prezzo_unitario: v.prezzoUnitario,
-  })) as unknown as never,
+  })),
   iva_percentuale: f.ivaPercentuale,
   note: f.note || null,
 });

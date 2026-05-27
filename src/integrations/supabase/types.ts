@@ -271,6 +271,69 @@ export type Database = {
           },
         ]
       }
+      fatture: {
+        Row: {
+          id: string
+          user_id: string
+          cliente_id: string | null
+          preventivo_id: string | null
+          numero: string
+          data_emissione: string
+          data_scadenza: string
+          stato: string
+          voci: Json
+          iva_percentuale: number
+          note: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          cliente_id?: string | null
+          preventivo_id?: string | null
+          numero: string
+          data_emissione: string
+          data_scadenza: string
+          stato?: string
+          voci?: Json
+          iva_percentuale?: number
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          cliente_id?: string | null
+          preventivo_id?: string | null
+          numero?: string
+          data_emissione?: string
+          data_scadenza?: string
+          stato?: string
+          voci?: Json
+          iva_percentuale?: number
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fatture_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fatture_preventivo_id_fkey"
+            columns: ["preventivo_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pagamenti: {
         Row: {
           id: string
