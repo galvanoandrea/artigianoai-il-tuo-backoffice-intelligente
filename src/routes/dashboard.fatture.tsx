@@ -449,7 +449,7 @@ function FatturaForm({
     setData((d) => ({ ...d, [k]: v }));
 
   const handlePreventivoChange = (prevId: string) => {
-    if (!prevId) {
+    if (!prevId || prevId === "__none__") {
       update("preventivoId", "");
       return;
     }
@@ -486,10 +486,10 @@ function FatturaForm({
       {!initial && accettati.length > 0 && (
         <div className="space-y-2">
           <Label htmlFor="preventivo">Da preventivo accettato (opzionale)</Label>
-          <Select value={data.preventivoId} onValueChange={handlePreventivoChange}>
+          <Select value={data.preventivoId || "__none__"} onValueChange={handlePreventivoChange}>
             <SelectTrigger id="preventivo"><SelectValue placeholder="Seleziona preventivo…" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">— nessuno —</SelectItem>
+              <SelectItem value="__none__">— nessuno —</SelectItem>
               {accettati.map((q) => (
                 <SelectItem key={q.id} value={q.id}>
                   {q.numero} · {clients.find((c) => c.id === q.clienteId)?.ragioneSociale ?? "—"}
