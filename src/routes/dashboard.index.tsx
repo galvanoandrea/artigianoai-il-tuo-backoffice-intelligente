@@ -9,10 +9,11 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from "recharts";
-import { Users, FileText, ArrowRight, TrendingUp, TrendingDown, Calendar, Target } from "lucide-react";
+import { Users, FileText, ArrowRight, TrendingUp, TrendingDown, Calendar, Target, Receipt } from "lucide-react";
 import { useClients } from "@/lib/clients-store";
 import { useQuotes, calcTotals, formatEuro } from "@/lib/quotes-store";
 import { usePagamenti, formatEuroF } from "@/lib/fornitori-store";
+import { useFatture } from "@/lib/fatture-store";
 
 export const Route = createFileRoute("/dashboard/")({
   component: DashboardHome,
@@ -62,6 +63,7 @@ function DashboardHome() {
   const clients = useClients();
   const quotes = useQuotes();
   const pagamenti = usePagamenti();
+  const fatture = useFatture();
   const [periodo, setPeriodo] = useState<"3" | "6" | "12" | "24">("12");
 
   const now = new Date();
@@ -127,6 +129,13 @@ function DashboardHome() {
     .filter((p) => p.stato === "da_pagare")
     .reduce((s, p) => s + p.importo, 0);
 
+  const fatturatoIncassato = fatture
+    .filter((f) => f.stato === "pagata")
+    .reduce((s, f) => s + calcTotals(f.voci, f.ivaPercentuale).totale, 0);
+
+  const fattureInScadenza = fatture
+    .filter((f) => f.stato === "inviata" || f.stato === "scaduta").length;
+
   // ---- Andamento annuo (anno corrente) ----
   const annoCorrente = now.getFullYear();
 
@@ -185,7 +194,7 @@ function DashboardHome() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Clienti attivi</CardTitle>
@@ -234,6 +243,24 @@ function DashboardHome() {
             <div className="text-2xl font-bold text-orange-600">{formatEuroF(totaleDaPagare)}</div>
             <Button asChild variant="link" className="px-0 mt-1 h-auto text-xs">
               <Link to="/dashboard/fornitori">Vai ai pagamenti <ArrowRight className="ml-1 h-3 w-3" /></Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Fatturato incassato</CardTitle>
+            <Receipt className="h-5 w-5 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-emerald-600">{formatEuro(fatturatoIncassato)}</div>
+            <Button asChild variant="link" className="px-0 mt-1 h-auto text-xs">
+              <Link to="/dashboard/fatture">
+                {fattureInScadenza > 0
+                  ? `${fattureInScadenza} in attesa · Vai alle fatture`
+                  : "Vai alle fatture"
+                } <ArrowRight className="ml-1 h-3 w-3" />
+              </Link>
             </Button>
           </CardContent>
         </Card>

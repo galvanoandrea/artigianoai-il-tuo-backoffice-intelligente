@@ -24,6 +24,7 @@ import { Route as DashboardImpostazioniRouteImport } from './routes/dashboard.im
 import { Route as DashboardFornitoriRouteImport } from './routes/dashboard.fornitori'
 import { Route as DashboardClientiRouteImport } from './routes/dashboard.clienti'
 import { Route as DashboardAdminRouteImport } from './routes/dashboard.admin'
+import { Route as DashboardFattureRouteImport } from './routes/dashboard.fatture'
 import { Route as DashboardAgendaRouteImport } from './routes/dashboard.agenda'
 
 const SubscribeSuccessRoute = SubscribeSuccessRouteImport.update({
@@ -101,6 +102,11 @@ const DashboardAdminRoute = DashboardAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardFattureRoute = DashboardFattureRouteImport.update({
+  id: '/fatture',
+  path: '/fatture',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardAgendaRoute = DashboardAgendaRouteImport.update({
   id: '/agenda',
   path: '/agenda',
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/agenda': typeof DashboardAgendaRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
+  '/dashboard/fatture': typeof DashboardFattureRoute
   '/dashboard/fornitori': typeof DashboardFornitoriRoute
   '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
   '/dashboard/preventivi': typeof DashboardPreventiviRoute
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/agenda': typeof DashboardAgendaRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
+  '/dashboard/fatture': typeof DashboardFattureRoute
   '/dashboard/fornitori': typeof DashboardFornitoriRoute
   '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
   '/dashboard/preventivi': typeof DashboardPreventiviRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/agenda': typeof DashboardAgendaRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
+  '/dashboard/fatture': typeof DashboardFattureRoute
   '/dashboard/fornitori': typeof DashboardFornitoriRoute
   '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
   '/dashboard/preventivi': typeof DashboardPreventiviRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin'
     | '/dashboard/agenda'
     | '/dashboard/clienti'
+    | '/dashboard/fatture'
     | '/dashboard/fornitori'
     | '/dashboard/impostazioni'
     | '/dashboard/preventivi'
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin'
     | '/dashboard/agenda'
     | '/dashboard/clienti'
+    | '/dashboard/fatture'
     | '/dashboard/fornitori'
     | '/dashboard/impostazioni'
     | '/dashboard/preventivi'
@@ -211,6 +222,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin'
     | '/dashboard/agenda'
     | '/dashboard/clienti'
+    | '/dashboard/fatture'
     | '/dashboard/fornitori'
     | '/dashboard/impostazioni'
     | '/dashboard/preventivi'
@@ -343,6 +355,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAgendaRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/fatture': {
+      id: '/dashboard/fatture'
+      path: '/fatture'
+      fullPath: '/dashboard/fatture'
+      preLoaderRoute: typeof DashboardFattureRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
@@ -350,6 +369,7 @@ interface DashboardRouteChildren {
   DashboardAdminRoute: typeof DashboardAdminRoute
   DashboardAgendaRoute: typeof DashboardAgendaRoute
   DashboardClientiRoute: typeof DashboardClientiRoute
+  DashboardFattureRoute: typeof DashboardFattureRoute
   DashboardFornitoriRoute: typeof DashboardFornitoriRoute
   DashboardImpostazioniRoute: typeof DashboardImpostazioniRoute
   DashboardPreventiviRoute: typeof DashboardPreventiviRoute
@@ -360,6 +380,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAdminRoute: DashboardAdminRoute,
   DashboardAgendaRoute: DashboardAgendaRoute,
   DashboardClientiRoute: DashboardClientiRoute,
+  DashboardFattureRoute: DashboardFattureRoute,
   DashboardFornitoriRoute: DashboardFornitoriRoute,
   DashboardImpostazioniRoute: DashboardImpostazioniRoute,
   DashboardPreventiviRoute: DashboardPreventiviRoute,

@@ -25,10 +25,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Plus, Search, MoreVertical, Pencil, Trash2, Eye, FileText, Printer, X,
+  Plus, Search, MoreVertical, Pencil, Trash2, Eye, FileText, Printer, X, Receipt,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useClients } from "@/lib/clients-store";
+import { useNavigate } from "@tanstack/react-router";
 import {
   useQuotes, addQuote, updateQuote, deleteQuote, setQuoteStatus,
   calcTotals, formatEuro, formatDate,
@@ -56,6 +57,7 @@ type CompanyProfile = {
 };
 
 function PreventiviPage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const quotes = useQuotes();
   const clients = useClients();
@@ -279,6 +281,11 @@ function PreventiviPage() {
                             <DropdownMenuItem onClick={() => setEditing(q)}>
                               <Pencil className="h-4 w-4 mr-2" /> Modifica
                             </DropdownMenuItem>
+                            {q.stato === "accettato" && (
+                              <DropdownMenuItem onClick={() => navigate({ to: "/dashboard/fatture", search: { da: q.id } })}>
+                                <Receipt className="h-4 w-4 mr-2" /> Crea fattura
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem
                               onClick={() => setDeleteTarget(q)}
                               className="text-destructive focus:text-destructive"
