@@ -38,7 +38,6 @@ import {
 } from "@/lib/fatture-store";
 
 export const Route = createFileRoute("/dashboard/fatture")({
-  validateSearch: (s: Record<string, unknown>) => ({ da: (s.da as string) ?? "" }),
   component: FatturePage,
 });
 
@@ -69,7 +68,6 @@ const newRow = (): QuoteItem => ({
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
 function FatturePage() {
-  const search = Route.useSearch();
   const { user } = useAuth();
   const fatture = useFatture();
   const clients = useClients();
@@ -120,13 +118,15 @@ function FatturePage() {
     })();
   }, [user]);
 
-  // Open create dialog with pre-filled preventivo if URL param is present
+  // Open create dialog pre-filled if ?da=<preventivoId> is in the URL
   useEffect(() => {
-    if (search.da) {
-      setInitPreventivoId(search.da);
+    if (typeof window === "undefined") return;
+    const da = new URLSearchParams(window.location.search).get("da") ?? "";
+    if (da) {
+      setInitPreventivoId(da);
       setCreateOpen(true);
     }
-  }, [search.da]);
+  }, []);
 
   const clientName = (id: string) => clients.find((c) => c.id === id)?.ragioneSociale ?? "—";
 

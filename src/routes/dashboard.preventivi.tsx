@@ -282,7 +282,7 @@ function PreventiviPage() {
                               <Pencil className="h-4 w-4 mr-2" /> Modifica
                             </DropdownMenuItem>
                             {q.stato === "accettato" && (
-                              <DropdownMenuItem onClick={() => navigate({ to: "/dashboard/fatture", search: { da: q.id } })}>
+                              <DropdownMenuItem onClick={() => navigate({ to: "/dashboard/fatture" as any, search: { da: q.id } as any })}>
                                 <Receipt className="h-4 w-4 mr-2" /> Crea fattura
                               </DropdownMenuItem>
                             )}
