@@ -197,19 +197,74 @@
   .card-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
   .badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 20px;
     font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
     text-transform: uppercase;
+    border: 1px solid transparent;
   }
-  .badge-richiamare { background: #2a2a3a; color: #a0a0d0; }
-  .badge-interesse { background: #1a2a3a; color: #60a5fa; }
-  .badge-appuntamento { background: #1a2e1a; color: #4ade80; }
-  .badge-mail { background: #2a2220; color: #fb923c; }
-  .badge-chiuso { background: #2a1a1a; color: var(--text-muted); }
+  /* colored dot inside badge */
+  .sdot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+  }
+  /* ── status badge colors ── */
+  .badge-chiamare    { background: #1e1e1e; color: #666; border-color: #333; }
+  .badge-chiamare .sdot    { background: #555; }
+  .badge-richiamare  { background: #271d08; color: #d97706; border-color: #5a3a05; }
+  .badge-richiamare .sdot  { background: #d97706; }
+  .badge-interesse   { background: #0f2018; color: #4ade80; border-color: #166534; }
+  .badge-interesse .sdot   { background: #4ade80; }
+  .badge-appuntamento{ background: #0b2415; color: #22c55e; border-color: #15803d; }
+  .badge-appuntamento .sdot{ background: #22c55e; box-shadow: 0 0 5px #22c55e88; }
+  .badge-mail        { background: #251a0a; color: #fb923c; border-color: #7c3e0d; }
+  .badge-mail .sdot  { background: #fb923c; }
+  .badge-chiuso      { background: #1a1a1a; color: #4a4a4a; border-color: #2e2e2e; }
+  .badge-chiuso .sdot{ background: #4a4a4a; }
+
+  /* quick-action contacted button */
+  .btn-contacted {
+    background: transparent;
+    color: #d97706;
+    border: 1px solid #5a3a05;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .btn-contacted:hover { background: var(--amber-glow); border-color: var(--amber); }
+
+  /* followup pill inline */
+  .followup-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 9px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .followup-pill.overdue { background: var(--red-glow); border-color: #6b1414; color: #f87171; }
+  .followup-pill.today   { background: var(--amber-glow); border-color: #7c4a05; color: var(--amber); font-weight: 700; }
+  .followup-pill.soon    { background: #1e1a0a; border-color: #5a3a05; color: #fbbf24; }
+
+  /* phone highlight */
+  .phone-hl {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .phone-hl a { color: inherit; text-decoration: none; }
+  .phone-hl a:hover { color: var(--red); }
 
   .urgency-tag {
     font-size: 11px;
@@ -221,10 +276,22 @@
   .urgency-today { background: var(--amber-glow); color: var(--amber); border: 1px solid var(--amber); }
   .urgency-soon { background: var(--amber-glow); color: var(--amber); border: 1px solid #a05010; }
 
+  /* key info strip: phone + followup pill */
+  .card-keyinfo {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: var(--surface2);
+    border-radius: 6px;
+  }
+
   .card-info {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px 16px;
+    gap: 5px 14px;
     margin-top: 8px;
     font-size: 12px;
     color: var(--text-muted);
@@ -419,7 +486,6 @@
     <button class="btn-primary" onclick="openModal()">+ Prospect</button>
     <input type="file" id="xlsxInput" accept=".xlsx,.xls" style="display:none" onchange="importXlsx(event)">
   </div>
-  </div>
 </header>
 
 <main>
@@ -431,7 +497,8 @@
     <input type="text" id="searchInput" placeholder="🔍 Cerca azienda, referente, note…" oninput="renderList()">
     <select id="filterStatus" onchange="renderList()">
       <option value="">Tutti gli stati</option>
-      <option value="da_richiamare">Da richiamare</option>
+      <option value="da_chiamare">Da chiamare</option>
+      <option value="da_richiamare">Chiamato – richiamare</option>
       <option value="interesse">Interesse</option>
       <option value="appuntamento">Appuntamento fissato</option>
       <option value="mail_inviata">Mail inviata</option>
@@ -510,7 +577,8 @@
         <div class="field">
           <label>Stato *</label>
           <select id="fStatus" required>
-            <option value="da_richiamare">Da richiamare</option>
+            <option value="da_chiamare">Da chiamare</option>
+            <option value="da_richiamare">Chiamato – richiamare</option>
             <option value="interesse">Interesse</option>
             <option value="appuntamento">Appuntamento fissato</option>
             <option value="mail_inviata">Mail inviata</option>
@@ -609,11 +677,12 @@ function fmtDate(dateStr) {
 
 // ── STATUS ────────────────────────────────────────────────────────────────
 const STATUS_MAP = {
-  da_richiamare:   { label: 'Da richiamare',       cls: 'badge-richiamare' },
-  interesse:       { label: 'Interesse',            cls: 'badge-interesse' },
-  appuntamento:    { label: 'Appuntamento fissato', cls: 'badge-appuntamento' },
-  mail_inviata:    { label: 'Mail inviata',         cls: 'badge-mail' },
-  chiuso_negativo: { label: 'Chiuso negativo',      cls: 'badge-chiuso' },
+  da_chiamare:     { label: 'Da chiamare',          cls: 'badge-chiamare',     icon: '○' },
+  da_richiamare:   { label: 'Chiamato – richiamare',cls: 'badge-richiamare',   icon: '↺' },
+  interesse:       { label: 'Interesse',             cls: 'badge-interesse',    icon: '◆' },
+  appuntamento:    { label: 'Appuntamento',          cls: 'badge-appuntamento', icon: '✓' },
+  mail_inviata:    { label: 'Mail inviata',          cls: 'badge-mail',         icon: '✉' },
+  chiuso_negativo: { label: 'Chiuso negativo',       cls: 'badge-chiuso',       icon: '✕' },
 };
 
 const VEHICLE_MAP = {
@@ -708,38 +777,49 @@ function renderList() {
   }
 
   document.getElementById('prospectList').innerHTML = list.map(p => {
-    const uClass = urgencyClass(p.followup);
-    const uLabel = urgencyLabel(p.followup);
-    const sInfo  = STATUS_MAP[p.status] || {};
-    const vLabel = VEHICLE_MAP[p.vehicleType] || '';
-    const noteHtml = p.notes
-      ? `<div class="card-note">${escHtml(p.notes)}</div>`
+    const uClass   = urgencyClass(p.followup);
+    const uLabel   = urgencyLabel(p.followup);
+    const sInfo    = STATUS_MAP[p.status] || { label: p.status, cls: 'badge-chiamare', icon: '○' };
+    const vLabel   = VEHICLE_MAP[p.vehicleType] || '';
+    const noteHtml = p.notes ? `<div class="card-note">${escHtml(p.notes)}</div>` : '';
+
+    // follow-up pill con colore urgenza
+    const fpClass  = uClass ? ` ${uClass}` : '';
+    const fpHtml   = p.followup
+      ? `<span class="followup-pill${fpClass}">📅 ${fmtDate(p.followup)}${uLabel ? ' ' + uLabel : ''}</span>`
+      : '';
+
+    // pulsante rapido solo per "da chiamare"
+    const contactedBtn = p.status === 'da_chiamare'
+      ? `<button class="btn-contacted" onclick="markContacted('${p.id}')">📞 Contattato →</button>`
       : '';
 
     return `
       <div class="prospect-card ${uClass}" data-id="${p.id}">
         <div class="card-top">
           <div class="card-title">
+            <span class="badge ${sInfo.cls}"><span class="sdot"></span>${sInfo.icon} ${sInfo.label}</span>
             ${escHtml(p.company)}
-            <span class="badge ${sInfo.cls}">${sInfo.label||p.status}</span>
-            ${uLabel}
           </div>
           <div class="card-actions">
-            <button class="btn-edit" onclick="openModal('${p.id}')">✏ Modifica</button>
+            ${contactedBtn}
+            <button class="btn-edit" onclick="openModal('${p.id}')">✏</button>
             <button class="btn-danger" onclick="askDelete('${p.id}', '${escAttr(p.company)}')">✕</button>
           </div>
+        </div>
+        <div class="card-keyinfo">
+          ${p.phone ? `<span class="phone-hl">📞 <a href="tel:${escAttr(p.phone)}">${escHtml(p.phone)}</a></span>` : '<span style="color:var(--text-dim);font-size:12px">nessun telefono</span>'}
+          ${fpHtml}
         </div>
         <div class="card-info">
           ${p.contact  ? `<span><span class="ico">👤</span>${escHtml(p.contact)}</span>` : ''}
           ${p.city     ? `<span><span class="ico">📍</span>${escHtml(p.city)}</span>` : ''}
           ${p.category ? `<span><span class="ico">🏭</span>${escHtml(p.category)}</span>` : ''}
-          ${p.phone    ? `<span><span class="ico">📞</span><a href="tel:${escAttr(p.phone)}" style="color:inherit;text-decoration:none">${escHtml(p.phone)}</a></span>` : ''}
           ${p.email    ? `<span><span class="ico">✉</span><a href="mailto:${escAttr(p.email)}" style="color:inherit;text-decoration:none">${escHtml(p.email)}</a></span>` : ''}
           ${p.website  ? `<span><span class="ico">🌐</span><a href="${escAttr(p.website)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${escHtml(p.website.replace(/^https?:\/\//,''))}</a></span>` : ''}
           ${p.vehicleType && p.vehicleType !== 'non_so' ? `<span><span class="ico">🚗</span>${vLabel}</span>` : ''}
           ${p.vehicleCount ? `<span><span class="ico">🔢</span>${p.vehicleCount} veicoli</span>` : ''}
           ${p.km ? `<span><span class="ico">🛣</span>${Number(p.km).toLocaleString('it-IT')} km/anno</span>` : ''}
-          ${p.followup ? `<span><span class="ico">📅</span>Follow-up: ${fmtDate(p.followup)}</span>` : ''}
         </div>
         ${noteHtml}
       </div>`;
@@ -774,7 +854,7 @@ function openModal(id) {
     document.getElementById('fCity').value        = p.city        || '';
     document.getElementById('fCategory').value   = p.category    || '';
     document.getElementById('fWebsite').value    = p.website     || '';
-    document.getElementById('fStatus').value     = p.status      || 'da_richiamare';
+    document.getElementById('fStatus').value     = p.status      || 'da_chiamare';
     document.getElementById('fFollowup').value   = p.followup    || '';
     document.getElementById('fNotes').value      = p.notes       || '';
   } else {
@@ -885,6 +965,18 @@ function exportCSV() {
   showToast(`📥 Esportati ${prospects.length} prospect`, 'success');
 }
 
+// ── QUICK ACTION ─────────────────────────────────────────────────────────
+function markContacted(id) {
+  const p = prospects.find(x => x.id === id);
+  if (!p) return;
+  p.status = 'da_richiamare';
+  p.updatedAt = Date.now();
+  save();
+  renderStats();
+  renderList();
+  showToast(`↺ ${p.company} → Chiamato – richiamare`, 'info');
+}
+
 // ── IMPORT XLSX ───────────────────────────────────────────────────────────
 function triggerXlsxImport() {
   const inp = document.getElementById('xlsxInput');
@@ -939,7 +1031,7 @@ function importXlsx(event) {
           vehicleType:  'non_so',
           vehicleCount: '',
           km:           '',
-          status:       'da_richiamare',
+          status:       'da_chiamare',
           followup:     '',
           notes:        '',
           createdAt:    Date.now(),
