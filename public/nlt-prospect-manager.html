@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NLT Prospect Manager</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #242424;
+    --border: #2e2e2e;
+    --red: #e03030;
+    --red-dark: #b02020;
+    --red-glow: rgba(224,48,48,0.15);
+    --amber: #d97706;
+    --amber-glow: rgba(217,119,6,0.15);
+    --green: #16a34a;
+    --green-glow: rgba(22,163,74,0.12);
+    --text: #f0f0f0;
+    --text-muted: #888;
+    --text-dim: #555;
+    --radius: 8px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: var(--text);
+  }
+  .logo span { color: var(--red); }
+  .header-actions { display: flex; gap: 8px; }
+
+  /* ── BUTTONS ── */
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 14px;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: var(--red);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--red-dark); }
+  .btn-ghost {
+    background: var(--surface2);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--border); color: var(--text); }
+  .btn-icon {
+    padding: 8px 10px;
+    font-size: 15px;
+    line-height: 1;
+  }
+  .btn-danger {
+    background: transparent;
+    color: var(--red);
+    border: 1px solid var(--red);
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  .btn-danger:hover { background: var(--red-glow); }
+  .btn-edit {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  .btn-edit:hover { color: var(--text); border-color: var(--text-muted); }
+
+  /* ── MAIN LAYOUT ── */
+  main { padding: 16px; max-width: 1100px; margin: 0 auto; }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    text-align: center;
+  }
+  .stat-card .num {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .stat-card .lbl {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .stat-card.urgent .num { color: var(--red); }
+  .stat-card.warning .num { color: var(--amber); }
+  .stat-card.interest .num { color: #60a5fa; }
+  .stat-card.appt .num { color: var(--green); }
+
+  /* ── FILTERS ── */
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+    align-items: center;
+  }
+  .filters input[type="text"],
+  .filters select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 7px 11px;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .filters input[type="text"] { flex: 1; min-width: 160px; }
+  .filters select { min-width: 160px; }
+  .filters input:focus, .filters select:focus { border-color: var(--red); }
+
+  /* ── PROSPECT LIST ── */
+  .prospect-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .prospect-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    padding: 14px 16px;
+    transition: border-color 0.15s;
+    position: relative;
+  }
+  .prospect-card:hover { border-color: #3a3a3a; }
+  .prospect-card.overdue { border-left: 3px solid var(--red); background: linear-gradient(135deg, #1f1212, var(--surface)); }
+  .prospect-card.soon { border-left: 3px solid var(--amber); background: linear-gradient(135deg, #1e1810, var(--surface)); }
+  .prospect-card.today { border-left: 3px solid var(--amber); background: linear-gradient(135deg, #1e1810, var(--surface)); }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .card-title {
+    font-weight: 600;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+  }
+  /* colored dot inside badge */
+  .sdot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+  }
+  /* ── status badge colors ── */
+  .badge-chiamare    { background: #1e1e1e; color: #666; border-color: #333; }
+  .badge-chiamare .sdot    { background: #555; }
+  .badge-richiamare  { background: #271d08; color: #d97706; border-color: #5a3a05; }
+  .badge-richiamare .sdot  { background: #d97706; }
+  .badge-interesse   { background: #0f2018; color: #4ade80; border-color: #166534; }
+  .badge-interesse .sdot   { background: #4ade80; }
+  .badge-appuntamento{ background: #0b2415; color: #22c55e; border-color: #15803d; }
+  .badge-appuntamento .sdot{ background: #22c55e; box-shadow: 0 0 5px #22c55e88; }
+  .badge-mail        { background: #251a0a; color: #fb923c; border-color: #7c3e0d; }
+  .badge-mail .sdot  { background: #fb923c; }
+  .badge-chiuso      { background: #1a1a1a; color: #4a4a4a; border-color: #2e2e2e; }
+  .badge-chiuso .sdot{ background: #4a4a4a; }
+
+  /* quick-action contacted button */
+  .btn-contacted {
+    background: transparent;
+    color: #d97706;
+    border: 1px solid #5a3a05;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .btn-contacted:hover { background: var(--amber-glow); border-color: var(--amber); }
+
+  /* followup pill inline */
+  .followup-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 9px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .followup-pill.overdue { background: var(--red-glow); border-color: #6b1414; color: #f87171; }
+  .followup-pill.today   { background: var(--amber-glow); border-color: #7c4a05; color: var(--amber); font-weight: 700; }
+  .followup-pill.soon    { background: #1e1a0a; border-color: #5a3a05; color: #fbbf24; }
+
+  /* phone highlight */
+  .phone-hl {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .phone-hl a { color: inherit; text-decoration: none; }
+  .phone-hl a:hover { color: var(--red); }
+
+  .urgency-tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+  .urgency-overdue { background: var(--red-glow); color: var(--red); border: 1px solid var(--red); }
+  .urgency-today { background: var(--amber-glow); color: var(--amber); border: 1px solid var(--amber); }
+  .urgency-soon { background: var(--amber-glow); color: var(--amber); border: 1px solid #a05010; }
+
+  /* key info strip: phone + followup pill */
+  .card-keyinfo {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: var(--surface2);
+    border-radius: 6px;
+  }
+
+  .card-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 14px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .card-info span { display: flex; align-items: center; gap: 4px; }
+  .card-info .ico { font-size: 13px; }
+
+  .card-note {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--surface2);
+    border-radius: 5px;
+    padding: 7px 10px;
+    border-left: 2px solid var(--border);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+  }
+  .empty-state .big { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 200;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; align-items: flex-start; justify-content: center; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    width: 100%;
+    max-width: 560px;
+    margin: auto;
+    box-shadow: var(--shadow);
+  }
+  .modal h2 {
+    font-size: 17px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .modal h2 span { color: var(--red); }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .form-grid .full { grid-column: 1 / -1; }
+
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 9px 11px;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+    font-family: inherit;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus { border-color: var(--red); }
+  .field textarea { resize: vertical; min-height: 80px; }
+  select option { background: #1a1a1a; }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── CONFIRM DIALOG ── */
+  .confirm-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+  }
+  .confirm-overlay.open { display: flex; }
+  .confirm-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 340px;
+    width: 90%;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .confirm-box .icon { font-size: 36px; margin-bottom: 12px; }
+  .confirm-box h3 { margin-bottom: 8px; }
+  .confirm-box p { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
+  .confirm-btns { display: flex; gap: 10px; justify-content: center; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    font-size: 13px;
+    z-index: 400;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.25s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 280px;
+    box-shadow: var(--shadow);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-left: 3px solid var(--green); }
+  .toast.error { border-left: 3px solid var(--red); }
+  .toast.info { border-left: 3px solid #60a5fa; }
+
+  /* ── SORT PILLS ── */
+  .sort-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .sort-pill {
+    padding: 5px 10px;
+    border-radius: 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .sort-pill:hover { border-color: var(--text-muted); }
+  .sort-pill.active { background: var(--red-glow); border-color: var(--red); color: var(--red); font-weight: 600; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 520px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid .full { grid-column: 1; }
+    .filters { flex-direction: column; }
+    .filters input[type="text"], .filters select { width: 100%; }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    header { flex-wrap: wrap; }
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">NLT<span>Pro</span> &mdash; Prospect Manager</div>
+  <div class="header-actions">
+    <button class="btn-ghost btn-icon" onclick="triggerXlsxImport()" title="Importa da Excel">📂 XLSX</button>
+    <button class="btn-ghost btn-icon" onclick="exportCSV()" title="Esporta CSV">📥 CSV</button>
+    <button class="btn-primary" onclick="openModal()">+ Prospect</button>
+    <input type="file" id="xlsxInput" accept=".xlsx,.xls" style="display:none" onchange="importXlsx(event)">
+  </div>
+</header>
+
+<main>
+  <!-- STATS -->
+  <div class="stats-bar" id="statsBar"></div>
+
+  <!-- FILTERS -->
+  <div class="filters">
+    <input type="text" id="searchInput" placeholder="🔍 Cerca azienda, referente, note…" oninput="renderList()">
+    <select id="filterStatus" onchange="renderList()">
+      <option value="">Tutti gli stati</option>
+      <option value="da_chiamare">Da chiamare</option>
+      <option value="da_richiamare">Chiamato – richiamare</option>
+      <option value="interesse">Interesse</option>
+      <option value="appuntamento">Appuntamento fissato</option>
+      <option value="mail_inviata">Mail inviata</option>
+      <option value="chiuso_negativo">Chiuso negativo</option>
+    </select>
+    <select id="filterUrgency" onchange="renderList()">
+      <option value="">Tutte le urgenze</option>
+      <option value="overdue">⚠ Scaduti</option>
+      <option value="today">📅 Oggi</option>
+      <option value="soon">🔔 Entro 3 giorni</option>
+    </select>
+    <div class="sort-pills">
+      <div class="sort-pill active" data-sort="followup" onclick="setSort('followup', this)">Data follow-up</div>
+      <div class="sort-pill" data-sort="company" onclick="setSort('company', this)">Azienda A-Z</div>
+      <div class="sort-pill" data-sort="created" onclick="setSort('created', this)">Più recenti</div>
+    </div>
+  </div>
+
+  <div class="prospect-count" id="prospectCount"></div>
+  <div id="prospectList"></div>
+</main>
+
+<!-- MODAL FORM -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeOnBackdrop(event)">
+  <div class="modal">
+    <h2><span>●</span> <span id="modalTitle">Nuovo Prospect</span></h2>
+    <form id="prospectForm" onsubmit="saveProspect(event)">
+      <input type="hidden" id="editId">
+      <div class="form-grid">
+        <div class="field full">
+          <label>Azienda *</label>
+          <input type="text" id="fCompany" required placeholder="Ragione sociale">
+        </div>
+        <div class="field">
+          <label>Referente *</label>
+          <input type="text" id="fContact" required placeholder="Nome cognome">
+        </div>
+        <div class="field">
+          <label>Telefono</label>
+          <input type="tel" id="fPhone" placeholder="+39 …">
+        </div>
+        <div class="field full">
+          <label>Email</label>
+          <input type="email" id="fEmail" placeholder="nome@azienda.it">
+        </div>
+        <div class="field">
+          <label>Città</label>
+          <input type="text" id="fCity" placeholder="Como, Varese…">
+        </div>
+        <div class="field">
+          <label>Categoria attività</label>
+          <input type="text" id="fCategory" placeholder="es. Trasporti, Edilizia…">
+        </div>
+        <div class="field full">
+          <label>Sito web</label>
+          <input type="url" id="fWebsite" placeholder="https://…">
+        </div>
+        <div class="field">
+          <label>Tipo veicolo attuale</label>
+          <select id="fVehicleType">
+            <option value="non_so">Non so</option>
+            <option value="acquisto">Acquisto</option>
+            <option value="leasing">Leasing</option>
+            <option value="noleggio">Noleggio</option>
+            <option value="finanziato">Finanziato</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Numero veicoli</label>
+          <input type="number" id="fVehicleCount" min="0" placeholder="es. 5">
+        </div>
+        <div class="field">
+          <label>Km annui stimati</label>
+          <input type="number" id="fKm" min="0" step="1000" placeholder="es. 30000">
+        </div>
+        <div class="field">
+          <label>Stato *</label>
+          <select id="fStatus" required>
+            <option value="da_chiamare">Da chiamare</option>
+            <option value="da_richiamare">Chiamato – richiamare</option>
+            <option value="interesse">Interesse</option>
+            <option value="appuntamento">Appuntamento fissato</option>
+            <option value="mail_inviata">Mail inviata</option>
+            <option value="chiuso_negativo">Chiuso negativo</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Data follow-up</label>
+          <input type="date" id="fFollowup">
+        </div>
+        <div class="field full">
+          <label>Note libere</label>
+          <textarea id="fNotes" placeholder="Contesto, obiezioni, dettagli…"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-ghost" onclick="closeModal()">Annulla</button>
+        <button type="submit" class="btn-primary">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="icon">🗑</div>
+    <h3>Elimina prospect?</h3>
+    <p id="confirmText">Questa azione non può essere annullata.</p>
+    <div class="confirm-btns">
+      <button class="btn-ghost" onclick="closeConfirm()">Annulla</button>
+      <button class="btn-danger" onclick="confirmDelete()">Elimina</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'nlt_prospects_v1';
+let prospects = [];
+let currentSort = 'followup';
+let deleteTargetId = null;
+
+function load() {
+  try {
+    prospects = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch { prospects = []; }
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(prospects));
+}
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+// ── DATE UTILS ────────────────────────────────────────────────────────────
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function diffDays(dateStr) {
+  if (!dateStr) return null;
+  const now = new Date(); now.setHours(0,0,0,0);
+  const d = new Date(dateStr); d.setHours(0,0,0,0);
+  return Math.round((d - now) / 86400000);
+}
+
+function urgencyClass(dateStr) {
+  const d = diffDays(dateStr);
+  if (d === null) return '';
+  if (d < 0) return 'overdue';
+  if (d === 0) return 'today';
+  if (d <= 3) return 'soon';
+  return '';
+}
+
+function urgencyLabel(dateStr) {
+  const d = diffDays(dateStr);
+  if (d === null) return '';
+  if (d < 0) return `<span class="urgency-tag urgency-overdue">SCADUTO ${Math.abs(d)}gg fa</span>`;
+  if (d === 0) return `<span class="urgency-tag urgency-today">OGGI</span>`;
+  if (d <= 3) return `<span class="urgency-tag urgency-soon">TRA ${d} GIORNO${d>1?'I':''}</span>`;
+  return '';
+}
+
+function fmtDate(dateStr) {
+  if (!dateStr) return '—';
+  const [y,m,d] = dateStr.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+// ── STATUS ────────────────────────────────────────────────────────────────
+const STATUS_MAP = {
+  da_chiamare:     { label: 'Da chiamare',          cls: 'badge-chiamare',     icon: '○' },
+  da_richiamare:   { label: 'Chiamato – richiamare',cls: 'badge-richiamare',   icon: '↺' },
+  interesse:       { label: 'Interesse',             cls: 'badge-interesse',    icon: '◆' },
+  appuntamento:    { label: 'Appuntamento',          cls: 'badge-appuntamento', icon: '✓' },
+  mail_inviata:    { label: 'Mail inviata',          cls: 'badge-mail',         icon: '✉' },
+  chiuso_negativo: { label: 'Chiuso negativo',       cls: 'badge-chiuso',       icon: '✕' },
+};
+
+const VEHICLE_MAP = {
+  non_so:    'Non so',
+  acquisto:  'Acquisto',
+  leasing:   'Leasing',
+  noleggio:  'Noleggio',
+  finanziato:'Finanziato',
+};
+
+// ── STATS ─────────────────────────────────────────────────────────────────
+function renderStats() {
+  const total     = prospects.length;
+  const overdue   = prospects.filter(p => urgencyClass(p.followup) === 'overdue' && p.status !== 'chiuso_negativo').length;
+  const today_n   = prospects.filter(p => urgencyClass(p.followup) === 'today').length;
+  const interesse = prospects.filter(p => p.status === 'interesse').length;
+  const appt      = prospects.filter(p => p.status === 'appuntamento').length;
+
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat-card">
+      <div class="num">${total}</div>
+      <div class="lbl">Totale</div>
+    </div>
+    <div class="stat-card urgent">
+      <div class="num">${overdue}</div>
+      <div class="lbl">Scaduti</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="num">${today_n}</div>
+      <div class="lbl">Oggi</div>
+    </div>
+    <div class="stat-card interest">
+      <div class="num">${interesse}</div>
+      <div class="lbl">Interesse</div>
+    </div>
+    <div class="stat-card appt">
+      <div class="num">${appt}</div>
+      <div class="lbl">Appuntamenti</div>
+    </div>
+  `;
+}
+
+// ── LIST RENDER ───────────────────────────────────────────────────────────
+function setSort(key, el) {
+  currentSort = key;
+  document.querySelectorAll('.sort-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderList();
+}
+
+function renderList() {
+  const search  = document.getElementById('searchInput').value.toLowerCase();
+  const status  = document.getElementById('filterStatus').value;
+  const urgency = document.getElementById('filterUrgency').value;
+
+  let list = prospects.filter(p => {
+    const matchSearch = !search || [p.company, p.contact, p.phone, p.email, p.notes, p.city, p.category, p.website]
+      .some(v => (v||'').toLowerCase().includes(search));
+    const matchStatus = !status || p.status === status;
+    const matchUrgency = !urgency || urgencyClass(p.followup) === urgency;
+    return matchSearch && matchStatus && matchUrgency;
+  });
+
+  // Sort
+  list.sort((a, b) => {
+    if (currentSort === 'followup') {
+      const da = a.followup || '9999-12-31';
+      const db = b.followup || '9999-12-31';
+      return da.localeCompare(db);
+    }
+    if (currentSort === 'company') {
+      return (a.company||'').localeCompare(b.company||'');
+    }
+    if (currentSort === 'created') {
+      return (b.createdAt||0) - (a.createdAt||0);
+    }
+    return 0;
+  });
+
+  document.getElementById('prospectCount').textContent =
+    `${list.length} prospect${list.length !== 1 ? 's' : ''} visualizzati`;
+
+  if (list.length === 0) {
+    document.getElementById('prospectList').innerHTML = `
+      <div class="empty-state">
+        <div class="big">📋</div>
+        <p>${prospects.length === 0
+          ? 'Nessun prospect ancora. Clicca <strong>+ Prospect</strong> per iniziare.'
+          : 'Nessun risultato per i filtri applicati.'}</p>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('prospectList').innerHTML = list.map(p => {
+    const uClass   = urgencyClass(p.followup);
+    const uLabel   = urgencyLabel(p.followup);
+    const sInfo    = STATUS_MAP[p.status] || { label: p.status, cls: 'badge-chiamare', icon: '○' };
+    const vLabel   = VEHICLE_MAP[p.vehicleType] || '';
+    const noteHtml = p.notes ? `<div class="card-note">${escHtml(p.notes)}</div>` : '';
+
+    // follow-up pill con colore urgenza
+    const fpClass  = uClass ? ` ${uClass}` : '';
+    const fpHtml   = p.followup
+      ? `<span class="followup-pill${fpClass}">📅 ${fmtDate(p.followup)}${uLabel ? ' ' + uLabel : ''}</span>`
+      : '';
+
+    // pulsante rapido solo per "da chiamare"
+    const contactedBtn = p.status === 'da_chiamare'
+      ? `<button class="btn-contacted" onclick="markContacted('${p.id}')">📞 Contattato →</button>`
+      : '';
+
+    return `
+      <div class="prospect-card ${uClass}" data-id="${p.id}">
+        <div class="card-top">
+          <div class="card-title">
+            <span class="badge ${sInfo.cls}"><span class="sdot"></span>${sInfo.icon} ${sInfo.label}</span>
+            ${escHtml(p.company)}
+          </div>
+          <div class="card-actions">
+            ${contactedBtn}
+            <button class="btn-edit" onclick="openModal('${p.id}')">✏</button>
+            <button class="btn-danger" onclick="askDelete('${p.id}', '${escAttr(p.company)}')">✕</button>
+          </div>
+        </div>
+        <div class="card-keyinfo">
+          ${p.phone ? `<span class="phone-hl">📞 <a href="tel:${escAttr(p.phone)}">${escHtml(p.phone)}</a></span>` : '<span style="color:var(--text-dim);font-size:12px">nessun telefono</span>'}
+          ${fpHtml}
+        </div>
+        <div class="card-info">
+          ${p.contact  ? `<span><span class="ico">👤</span>${escHtml(p.contact)}</span>` : ''}
+          ${p.city     ? `<span><span class="ico">📍</span>${escHtml(p.city)}</span>` : ''}
+          ${p.category ? `<span><span class="ico">🏭</span>${escHtml(p.category)}</span>` : ''}
+          ${p.email    ? `<span><span class="ico">✉</span><a href="mailto:${escAttr(p.email)}" style="color:inherit;text-decoration:none">${escHtml(p.email)}</a></span>` : ''}
+          ${p.website  ? `<span><span class="ico">🌐</span><a href="${escAttr(p.website)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${escHtml(p.website.replace(/^https?:\/\//,''))}</a></span>` : ''}
+          ${p.vehicleType && p.vehicleType !== 'non_so' ? `<span><span class="ico">🚗</span>${vLabel}</span>` : ''}
+          ${p.vehicleCount ? `<span><span class="ico">🔢</span>${p.vehicleCount} veicoli</span>` : ''}
+          ${p.km ? `<span><span class="ico">🛣</span>${Number(p.km).toLocaleString('it-IT')} km/anno</span>` : ''}
+        </div>
+        ${noteHtml}
+      </div>`;
+  }).join('');
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return String(s||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;');
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById('prospectForm').reset();
+  document.getElementById('editId').value = '';
+  document.getElementById('modalTitle').textContent = 'Nuovo Prospect';
+
+  if (id) {
+    const p = prospects.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('modalTitle').textContent = 'Modifica Prospect';
+    document.getElementById('editId').value      = p.id;
+    document.getElementById('fCompany').value    = p.company     || '';
+    document.getElementById('fContact').value    = p.contact     || '';
+    document.getElementById('fPhone').value      = p.phone       || '';
+    document.getElementById('fEmail').value      = p.email       || '';
+    document.getElementById('fVehicleType').value= p.vehicleType || 'non_so';
+    document.getElementById('fVehicleCount').value = p.vehicleCount || '';
+    document.getElementById('fKm').value         = p.km          || '';
+    document.getElementById('fCity').value        = p.city        || '';
+    document.getElementById('fCategory').value   = p.category    || '';
+    document.getElementById('fWebsite').value    = p.website     || '';
+    document.getElementById('fStatus').value     = p.status      || 'da_chiamare';
+    document.getElementById('fFollowup').value   = p.followup    || '';
+    document.getElementById('fNotes').value      = p.notes       || '';
+  } else {
+    // Default follow-up = domani
+    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+    document.getElementById('fFollowup').value = tomorrow.toISOString().slice(0,10);
+  }
+
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fCompany').focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function closeOnBackdrop(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+// ── SAVE ──────────────────────────────────────────────────────────────────
+function saveProspect(e) {
+  e.preventDefault();
+  const id = document.getElementById('editId').value;
+  const data = {
+    id:           id || genId(),
+    company:      document.getElementById('fCompany').value.trim(),
+    contact:      document.getElementById('fContact').value.trim(),
+    phone:        document.getElementById('fPhone').value.trim(),
+    email:        document.getElementById('fEmail').value.trim(),
+    city:         document.getElementById('fCity').value.trim(),
+    category:     document.getElementById('fCategory').value.trim(),
+    website:      document.getElementById('fWebsite').value.trim(),
+    vehicleType:  document.getElementById('fVehicleType').value,
+    vehicleCount: document.getElementById('fVehicleCount').value || '',
+    km:           document.getElementById('fKm').value || '',
+    status:       document.getElementById('fStatus').value,
+    followup:     document.getElementById('fFollowup').value,
+    notes:        document.getElementById('fNotes').value.trim(),
+    createdAt:    id ? (prospects.find(x=>x.id===id)||{}).createdAt || Date.now() : Date.now(),
+    updatedAt:    Date.now(),
+  };
+
+  if (id) {
+    const idx = prospects.findIndex(x => x.id === id);
+    if (idx >= 0) prospects[idx] = data;
+    showToast('✅ Prospect aggiornato', 'success');
+  } else {
+    prospects.push(data);
+    showToast('✅ Prospect aggiunto', 'success');
+  }
+
+  save();
+  closeModal();
+  renderStats();
+  renderList();
+}
+
+// ── DELETE ────────────────────────────────────────────────────────────────
+function askDelete(id, name) {
+  deleteTargetId = id;
+  document.getElementById('confirmText').textContent = `Eliminare "${name}"? Questa azione non può essere annullata.`;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+
+function closeConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('open');
+  deleteTargetId = null;
+}
+
+function confirmDelete() {
+  if (!deleteTargetId) return;
+  prospects = prospects.filter(p => p.id !== deleteTargetId);
+  save();
+  closeConfirm();
+  renderStats();
+  renderList();
+  showToast('🗑 Prospect eliminato', 'info');
+}
+
+// ── EXPORT CSV ────────────────────────────────────────────────────────────
+function exportCSV() {
+  if (prospects.length === 0) { showToast('Nessun dato da esportare', 'error'); return; }
+
+  const headers = [
+    'Azienda','Referente','Città','Categoria','Telefono','Email','Sito',
+    'Tipo Veicolo','N. Veicoli','Km Annui',
+    'Stato','Follow-up','Note','Creato'
+  ];
+
+  const rows = prospects.map(p => [
+    p.company, p.contact, p.city, p.category, p.phone, p.email, p.website,
+    VEHICLE_MAP[p.vehicleType] || p.vehicleType,
+    p.vehicleCount, p.km,
+    STATUS_MAP[p.status]?.label || p.status,
+    fmtDate(p.followup), p.notes,
+    p.createdAt ? new Date(p.createdAt).toLocaleDateString('it-IT') : ''
+  ].map(v => `"${String(v||'').replace(/"/g,'""')}"`));
+
+  const csv = '﻿' + [headers.map(h=>`"${h}"`), ...rows].map(r=>r.join(';')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `nlt_prospects_${today()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`📥 Esportati ${prospects.length} prospect`, 'success');
+}
+
+// ── QUICK ACTION ─────────────────────────────────────────────────────────
+function markContacted(id) {
+  const p = prospects.find(x => x.id === id);
+  if (!p) return;
+  p.status = 'da_richiamare';
+  p.updatedAt = Date.now();
+  save();
+  renderStats();
+  renderList();
+  showToast(`↺ ${p.company} → Chiamato – richiamare`, 'info');
+}
+
+// ── IMPORT XLSX ───────────────────────────────────────────────────────────
+function triggerXlsxImport() {
+  const inp = document.getElementById('xlsxInput');
+  inp.value = '';
+  inp.click();
+}
+
+function importXlsx(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      // raw array-of-arrays, colonne come numeri
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+      // riga 0 = intestazione, righe 1-7 = 7 aziende già inserite manualmente
+      // importa dalla riga 8 in poi (indice 0-based)
+      const dataRows = rows.slice(8);
+
+      if (dataRows.length === 0) {
+        showToast('Nessuna riga da importare dopo riga 9', 'error');
+        return;
+      }
+
+      let added = 0, skipped = 0;
+      dataRows.forEach(row => {
+        const company = String(row[0] || '').trim();
+        if (!company) { skipped++; return; }
+
+        // evita duplicati per nome azienda (case-insensitive)
+        const exists = prospects.some(p => p.company.toLowerCase() === company.toLowerCase());
+        if (exists) { skipped++; return; }
+
+        const phone   = String(row[6]  || '').trim();
+        const website = String(row[5]  || '').trim();
+        const city    = String(row[2]  || '').trim();
+        const category= String(row[16] || '').trim();
+
+        prospects.push({
+          id:           genId(),
+          company,
+          contact:      '',
+          phone,
+          email:        '',
+          city,
+          category,
+          website,
+          vehicleType:  'non_so',
+          vehicleCount: '',
+          km:           '',
+          status:       'da_chiamare',
+          followup:     '',
+          notes:        '',
+          createdAt:    Date.now(),
+          updatedAt:    Date.now(),
+        });
+        added++;
+      });
+
+      save();
+      renderStats();
+      renderList();
+
+      if (added > 0) {
+        showToast(`✅ Importati ${added} prospect${skipped ? ` (${skipped} ignorati)` : ''}`, 'success');
+      } else {
+        showToast(`Nessun nuovo prospect — ${skipped} già presenti o righe vuote`, 'info');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Errore nella lettura del file Excel', 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── KEYBOARD ─────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closeConfirm(); }
+  if (e.key === 'n' && !e.ctrlKey && !e.metaKey && e.target.tagName === 'BODY') openModal();
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+load();
+
+// migrazione una-tantum: prospect dal 5° in poi con "da_richiamare" → "da_chiamare"
+if (!localStorage.getItem('nlt_migration_v2')) {
+  let changed = 0;
+  prospects.slice(4).forEach(p => {
+    if (p.status === 'da_richiamare') { p.status = 'da_chiamare'; changed++; }
+  });
+  if (changed) save();
+  localStorage.setItem('nlt_migration_v2', '1');
+}
+
+renderStats();
+renderList();
+</script>
+</body>
+</html>
