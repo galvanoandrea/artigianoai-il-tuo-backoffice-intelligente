@@ -1075,6 +1075,17 @@ document.addEventListener('keydown', e => {
 
 // ── INIT ──────────────────────────────────────────────────────────────────
 load();
+
+// migrazione una-tantum: prospect dal 5° in poi con "da_richiamare" → "da_chiamare"
+if (!localStorage.getItem('nlt_migration_v2')) {
+  let changed = 0;
+  prospects.slice(4).forEach(p => {
+    if (p.status === 'da_richiamare') { p.status = 'da_chiamare'; changed++; }
+  });
+  if (changed) save();
+  localStorage.setItem('nlt_migration_v2', '1');
+}
+
 renderStats();
 renderList();
 </script>
