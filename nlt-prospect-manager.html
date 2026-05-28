@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NLT Prospect Manager</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root {
     --bg: #0f0f0f;
@@ -413,8 +414,11 @@
 <header>
   <div class="logo">NLT<span>Pro</span> &mdash; Prospect Manager</div>
   <div class="header-actions">
+    <button class="btn-ghost btn-icon" onclick="triggerXlsxImport()" title="Importa da Excel">📂 XLSX</button>
     <button class="btn-ghost btn-icon" onclick="exportCSV()" title="Esporta CSV">📥 CSV</button>
     <button class="btn-primary" onclick="openModal()">+ Prospect</button>
+    <input type="file" id="xlsxInput" accept=".xlsx,.xls" style="display:none" onchange="importXlsx(event)">
+  </div>
   </div>
 </header>
 
@@ -472,6 +476,18 @@
         <div class="field full">
           <label>Email</label>
           <input type="email" id="fEmail" placeholder="nome@azienda.it">
+        </div>
+        <div class="field">
+          <label>Città</label>
+          <input type="text" id="fCity" placeholder="Como, Varese…">
+        </div>
+        <div class="field">
+          <label>Categoria attività</label>
+          <input type="text" id="fCategory" placeholder="es. Trasporti, Edilizia…">
+        </div>
+        <div class="field full">
+          <label>Sito web</label>
+          <input type="url" id="fWebsite" placeholder="https://…">
         </div>
         <div class="field">
           <label>Tipo veicolo attuale</label>
@@ -654,7 +670,7 @@ function renderList() {
   const urgency = document.getElementById('filterUrgency').value;
 
   let list = prospects.filter(p => {
-    const matchSearch = !search || [p.company, p.contact, p.phone, p.email, p.notes]
+    const matchSearch = !search || [p.company, p.contact, p.phone, p.email, p.notes, p.city, p.category, p.website]
       .some(v => (v||'').toLowerCase().includes(search));
     const matchStatus = !status || p.status === status;
     const matchUrgency = !urgency || urgencyClass(p.followup) === urgency;
@@ -714,12 +730,15 @@ function renderList() {
           </div>
         </div>
         <div class="card-info">
-          ${p.contact ? `<span><span class="ico">👤</span>${escHtml(p.contact)}</span>` : ''}
-          ${p.phone   ? `<span><span class="ico">📞</span><a href="tel:${escAttr(p.phone)}" style="color:inherit;text-decoration:none">${escHtml(p.phone)}</a></span>` : ''}
-          ${p.email   ? `<span><span class="ico">✉</span><a href="mailto:${escAttr(p.email)}" style="color:inherit;text-decoration:none">${escHtml(p.email)}</a></span>` : ''}
+          ${p.contact  ? `<span><span class="ico">👤</span>${escHtml(p.contact)}</span>` : ''}
+          ${p.city     ? `<span><span class="ico">📍</span>${escHtml(p.city)}</span>` : ''}
+          ${p.category ? `<span><span class="ico">🏭</span>${escHtml(p.category)}</span>` : ''}
+          ${p.phone    ? `<span><span class="ico">📞</span><a href="tel:${escAttr(p.phone)}" style="color:inherit;text-decoration:none">${escHtml(p.phone)}</a></span>` : ''}
+          ${p.email    ? `<span><span class="ico">✉</span><a href="mailto:${escAttr(p.email)}" style="color:inherit;text-decoration:none">${escHtml(p.email)}</a></span>` : ''}
+          ${p.website  ? `<span><span class="ico">🌐</span><a href="${escAttr(p.website)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${escHtml(p.website.replace(/^https?:\/\//,''))}</a></span>` : ''}
           ${p.vehicleType && p.vehicleType !== 'non_so' ? `<span><span class="ico">🚗</span>${vLabel}</span>` : ''}
           ${p.vehicleCount ? `<span><span class="ico">🔢</span>${p.vehicleCount} veicoli</span>` : ''}
-          ${p.km ? `<span><span class="ico">📍</span>${Number(p.km).toLocaleString('it-IT')} km/anno</span>` : ''}
+          ${p.km ? `<span><span class="ico">🛣</span>${Number(p.km).toLocaleString('it-IT')} km/anno</span>` : ''}
           ${p.followup ? `<span><span class="ico">📅</span>Follow-up: ${fmtDate(p.followup)}</span>` : ''}
         </div>
         ${noteHtml}
@@ -752,6 +771,9 @@ function openModal(id) {
     document.getElementById('fVehicleType').value= p.vehicleType || 'non_so';
     document.getElementById('fVehicleCount').value = p.vehicleCount || '';
     document.getElementById('fKm').value         = p.km          || '';
+    document.getElementById('fCity').value        = p.city        || '';
+    document.getElementById('fCategory').value   = p.category    || '';
+    document.getElementById('fWebsite').value    = p.website     || '';
     document.getElementById('fStatus').value     = p.status      || 'da_richiamare';
     document.getElementById('fFollowup').value   = p.followup    || '';
     document.getElementById('fNotes').value      = p.notes       || '';
@@ -783,6 +805,9 @@ function saveProspect(e) {
     contact:      document.getElementById('fContact').value.trim(),
     phone:        document.getElementById('fPhone').value.trim(),
     email:        document.getElementById('fEmail').value.trim(),
+    city:         document.getElementById('fCity').value.trim(),
+    category:     document.getElementById('fCategory').value.trim(),
+    website:      document.getElementById('fWebsite').value.trim(),
     vehicleType:  document.getElementById('fVehicleType').value,
     vehicleCount: document.getElementById('fVehicleCount').value || '',
     km:           document.getElementById('fKm').value || '',
@@ -835,13 +860,13 @@ function exportCSV() {
   if (prospects.length === 0) { showToast('Nessun dato da esportare', 'error'); return; }
 
   const headers = [
-    'Azienda','Referente','Telefono','Email',
+    'Azienda','Referente','Città','Categoria','Telefono','Email','Sito',
     'Tipo Veicolo','N. Veicoli','Km Annui',
     'Stato','Follow-up','Note','Creato'
   ];
 
   const rows = prospects.map(p => [
-    p.company, p.contact, p.phone, p.email,
+    p.company, p.contact, p.city, p.category, p.phone, p.email, p.website,
     VEHICLE_MAP[p.vehicleType] || p.vehicleType,
     p.vehicleCount, p.km,
     STATUS_MAP[p.status]?.label || p.status,
@@ -858,6 +883,86 @@ function exportCSV() {
   a.click();
   URL.revokeObjectURL(url);
   showToast(`📥 Esportati ${prospects.length} prospect`, 'success');
+}
+
+// ── IMPORT XLSX ───────────────────────────────────────────────────────────
+function triggerXlsxImport() {
+  const inp = document.getElementById('xlsxInput');
+  inp.value = '';
+  inp.click();
+}
+
+function importXlsx(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      // raw array-of-arrays, colonne come numeri
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+      // riga 0 = intestazione, righe 1-7 = 7 aziende già inserite manualmente
+      // importa dalla riga 8 in poi (indice 0-based)
+      const dataRows = rows.slice(8);
+
+      if (dataRows.length === 0) {
+        showToast('Nessuna riga da importare dopo riga 9', 'error');
+        return;
+      }
+
+      let added = 0, skipped = 0;
+      dataRows.forEach(row => {
+        const company = String(row[0] || '').trim();
+        if (!company) { skipped++; return; }
+
+        // evita duplicati per nome azienda (case-insensitive)
+        const exists = prospects.some(p => p.company.toLowerCase() === company.toLowerCase());
+        if (exists) { skipped++; return; }
+
+        const phone   = String(row[6]  || '').trim();
+        const website = String(row[5]  || '').trim();
+        const city    = String(row[2]  || '').trim();
+        const category= String(row[16] || '').trim();
+
+        prospects.push({
+          id:           genId(),
+          company,
+          contact:      '',
+          phone,
+          email:        '',
+          city,
+          category,
+          website,
+          vehicleType:  'non_so',
+          vehicleCount: '',
+          km:           '',
+          status:       'da_richiamare',
+          followup:     '',
+          notes:        '',
+          createdAt:    Date.now(),
+          updatedAt:    Date.now(),
+        });
+        added++;
+      });
+
+      save();
+      renderStats();
+      renderList();
+
+      if (added > 0) {
+        showToast(`✅ Importati ${added} prospect${skipped ? ` (${skipped} ignorati)` : ''}`, 'success');
+      } else {
+        showToast(`Nessun nuovo prospect — ${skipped} già presenti o righe vuote`, 'info');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Errore nella lettura del file Excel', 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────
