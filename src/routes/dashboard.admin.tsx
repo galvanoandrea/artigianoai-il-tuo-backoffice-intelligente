@@ -1,7 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
-import { ShieldCheck, Mail, Users, Ban, CheckCircle2, RefreshCw, UserCheck, UserX, Clock } from "lucide-react";
+import {
+  ShieldCheck, Mail, Users, Ban, CheckCircle2, RefreshCw,
+  UserCheck, UserX, Clock, BarChart2, X, Building2,
+  FileText, Receipt, Wallet, TrendingUp,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +16,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -29,6 +36,30 @@ type UserEntry = {
   approved: boolean;
 };
 
+type UserStats = {
+  profile: {
+    nome_completo?: string;
+    nome_azienda?: string;
+    partita_iva?: string;
+    telefono?: string;
+    email_azienda?: string;
+    citta?: string;
+  };
+  clients: { total: number; active: number };
+  quotes: {
+    byStatus: { bozza: number; inviato: number; accettato: number; rifiutato: number };
+    totalAccettati: number;
+  };
+  fatture: {
+    byStatus: { bozza: number; inviata: number; pagata: number; scaduta: number };
+    fatturatoTotale: number;
+    fatturatoIncassato: number;
+  };
+};
+
+const euro = (n: number) =>
+  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
+
 async function getAuthHeader(): Promise<string | null> {
   const { data: { session } } = await supabase.auth.getSession();
   return session?.access_token ? `Bearer ${session.access_token}` : null;
@@ -45,6 +76,16 @@ async function callAdmin(method: string, body?: object) {
   return res.json();
 }
 
+async function fetchUserStats(userId: string): Promise<UserStats | null> {
+  const auth = await getAuthHeader();
+  if (!auth) return null;
+  const res = await fetch(`/api/admin-user-stats?userId=${userId}`, {
+    headers: { Authorization: auth },
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
 function AdminPage() {
   const navigate = useNavigate();
   const { user: me } = useAuth();
@@ -56,6 +97,9 @@ function AdminPage() {
   const [inviting, setInviting] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<{ user: UserEntry; action: "ban" | "unban" | "approve" | "reject" } | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
+  const [statsUser, setStatsUser] = useState<UserEntry | null>(null);
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   const loadUsers = useCallback(async () => {
     setLoadingUsers(true);
@@ -83,6 +127,20 @@ function AdminPage() {
       .catch(() => navigate({ to: "/dashboard" }))
       .finally(() => setChecking(false));
   }, [navigate]);
+
+  const openStats = async (u: UserEntry) => {
+    setStatsUser(u);
+    setStats(null);
+    setLoadingStats(true);
+    try {
+      const data = await fetchUserStats(u.id);
+      setStats(data);
+    } catch {
+      toast.error("Errore nel caricamento statistiche");
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -239,49 +297,62 @@ function AdminPage() {
                         {u.last_sign_in_at && ` · Ultimo accesso ${formatDate(u.last_sign_in_at)}`}
                       </div>
                     </div>
-                    {!isMe && (
-                      <div className="flex items-center gap-2 shrink-0">
-                        {actioning === u.id ? (
-                          <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
-                        ) : pending ? (
-                          <>
-                            <Button
-                              size="sm"
-                              disabled={actioning === u.id}
-                              onClick={() => setConfirmTarget({ user: u, action: "approve" })}
-                              className="bg-emerald-600 text-white hover:bg-emerald-700 h-8"
-                            >
-                              <UserCheck className="h-3 w-3 mr-1" /> Approva
-                            </Button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Stats button — always visible for approved users (not self) */}
+                      {!isMe && u.approved && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openStats(u)}
+                          className="h-8"
+                        >
+                          <BarChart2 className="h-3 w-3 mr-1" /> Dettagli
+                        </Button>
+                      )}
+                      {!isMe && (
+                        <div className="flex items-center gap-2">
+                          {actioning === u.id ? (
+                            <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+                          ) : pending ? (
+                            <>
+                              <Button
+                                size="sm"
+                                disabled={actioning === u.id}
+                                onClick={() => setConfirmTarget({ user: u, action: "approve" })}
+                                className="bg-emerald-600 text-white hover:bg-emerald-700 h-8"
+                              >
+                                <UserCheck className="h-3 w-3 mr-1" /> Approva
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={actioning === u.id}
+                                onClick={() => setConfirmTarget({ user: u, action: "reject" })}
+                                className="text-destructive border-destructive/30 hover:bg-destructive/10 h-8"
+                              >
+                                <UserX className="h-3 w-3 mr-1" /> Rifiuta
+                              </Button>
+                            </>
+                          ) : (
                             <Button
                               size="sm"
                               variant="outline"
                               disabled={actioning === u.id}
-                              onClick={() => setConfirmTarget({ user: u, action: "reject" })}
-                              className="text-destructive border-destructive/30 hover:bg-destructive/10 h-8"
+                              onClick={() => setConfirmTarget({ user: u, action: u.banned ? "unban" : "ban" })}
+                              className={u.banned
+                                ? "text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-950 h-8"
+                                : "text-destructive border-destructive/30 hover:bg-destructive/10 h-8"}
                             >
-                              <UserX className="h-3 w-3 mr-1" /> Rifiuta
+                              {u.banned ? (
+                                <><CheckCircle2 className="h-3 w-3 mr-1" /> Sblocca</>
+                              ) : (
+                                <><Ban className="h-3 w-3 mr-1" /> Blocca</>
+                              )}
                             </Button>
-                          </>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={actioning === u.id}
-                            onClick={() => setConfirmTarget({ user: u, action: u.banned ? "unban" : "ban" })}
-                            className={u.banned
-                              ? "text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-950 h-8"
-                              : "text-destructive border-destructive/30 hover:bg-destructive/10 h-8"}
-                          >
-                            {u.banned ? (
-                              <><CheckCircle2 className="h-3 w-3 mr-1" /> Sblocca</>
-                            ) : (
-                              <><Ban className="h-3 w-3 mr-1" /> Blocca</>
-                            )}
-                          </Button>
-                        )}
-                      </div>
-                    )}
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -325,6 +396,124 @@ function AdminPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* User stats dialog */}
+      <Dialog open={!!statsUser} onOpenChange={(o) => !o && setStatsUser(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart2 className="w-5 h-5" />
+              Situazione utente
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">{statsUser?.email}</p>
+          </DialogHeader>
+
+          {loadingStats ? (
+            <div className="space-y-3 py-4">
+              {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full" />)}
+            </div>
+          ) : stats ? (
+            <div className="space-y-5 py-2">
+              {/* Profilo azienda */}
+              {(stats.profile.nome_azienda || stats.profile.nome_completo) && (
+                <div className="rounded-lg border p-4 space-y-2">
+                  <div className="flex items-center gap-2 font-semibold text-sm">
+                    <Building2 className="w-4 h-4 text-muted-foreground" />
+                    {stats.profile.nome_azienda || stats.profile.nome_completo}
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    {stats.profile.partita_iva && <span>P.IVA {stats.profile.partita_iva}</span>}
+                    {stats.profile.citta && <span>{stats.profile.citta}</span>}
+                    {stats.profile.telefono && <span>{stats.profile.telefono}</span>}
+                    {stats.profile.email_azienda && <span>{stats.profile.email_azienda}</span>}
+                  </div>
+                </div>
+              )}
+
+              {/* Clienti */}
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Clienti</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <StatCard icon={Users} label="Totali" value={stats.clients.total} />
+                  <StatCard icon={CheckCircle2} label="Attivi" value={stats.clients.active} color="emerald" />
+                </div>
+              </div>
+
+              {/* Preventivi */}
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Preventivi</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <StatCard icon={FileText} label="Bozze" value={stats.quotes.byStatus.bozza} />
+                  <StatCard icon={FileText} label="Inviati" value={stats.quotes.byStatus.inviato} color="primary" />
+                  <StatCard icon={FileText} label="Accettati" value={stats.quotes.byStatus.accettato} color="emerald" />
+                  <StatCard icon={FileText} label="Rifiutati" value={stats.quotes.byStatus.rifiutato} color="red" />
+                </div>
+                {stats.quotes.totalAccettati > 0 && (
+                  <div className="mt-2 rounded-md bg-emerald-500/10 px-3 py-2 text-sm flex items-center justify-between">
+                    <span className="text-emerald-700 dark:text-emerald-400 font-medium">Valore accettati</span>
+                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">{euro(stats.quotes.totalAccettati)}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Fatture */}
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Fatture</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <StatCard icon={Receipt} label="Bozze" value={stats.fatture.byStatus.bozza} />
+                  <StatCard icon={Receipt} label="Inviate" value={stats.fatture.byStatus.inviata} color="primary" />
+                  <StatCard icon={Receipt} label="Pagate" value={stats.fatture.byStatus.pagata} color="emerald" />
+                  <StatCard icon={Receipt} label="Scadute" value={stats.fatture.byStatus.scaduta} color="red" />
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  <div className="rounded-md bg-muted/50 px-3 py-2 text-sm flex items-center justify-between">
+                    <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                      <TrendingUp className="w-3.5 h-3.5" /> Fatturato emesso
+                    </span>
+                    <span className="font-semibold">{euro(stats.fatture.fatturatoTotale)}</span>
+                  </div>
+                  <div className="rounded-md bg-emerald-500/10 px-3 py-2 text-sm flex items-center justify-between">
+                    <span className="text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-1.5">
+                      <Wallet className="w-3.5 h-3.5" /> Incassato
+                    </span>
+                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">{euro(stats.fatture.fatturatoIncassato)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="py-8 text-center text-sm text-muted-foreground">Nessun dato disponibile.</p>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  color,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: number;
+  color?: "emerald" | "primary" | "red";
+}) {
+  const colorClass =
+    color === "emerald" ? "text-emerald-600 dark:text-emerald-400" :
+    color === "primary" ? "text-primary" :
+    color === "red" ? "text-destructive" :
+    "text-foreground";
+
+  return (
+    <div className="rounded-md border bg-card px-3 py-2.5">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+        <Icon className="w-3 h-3" />
+        {label}
+      </div>
+      <div className={`text-xl font-bold ${colorClass}`}>{value}</div>
     </div>
   );
 }
