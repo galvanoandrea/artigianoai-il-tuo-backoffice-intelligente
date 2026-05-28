@@ -298,8 +298,8 @@ function AdminPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {/* Stats button — always visible for approved users (not self) */}
-                      {!isMe && u.approved && (
+                      {/* Stats button — visible for all users except self */}
+                      {!isMe && (
                         <Button
                           size="sm"
                           variant="outline"
