@@ -996,22 +996,25 @@ function importXlsx(event) {
       // raw array-of-arrays, colonne come numeri
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
-      // riga 0 = intestazione, righe 1-7 = 7 aziende già inserite manualmente
-      // importa dalla riga 8 in poi (indice 0-based)
-      const dataRows = rows.slice(8);
+      // riga 0 = intestazione, dati dalla riga 1 in poi
+      const dataRows = rows.slice(1).filter(row => String(row[0] || '').trim());
 
       if (dataRows.length === 0) {
-        showToast('Nessuna riga da importare dopo riga 9', 'error');
+        showToast('Nessuna riga dati trovata nel file', 'error');
         return;
       }
 
       let added = 0, skipped = 0;
       dataRows.forEach(row => {
         const company = String(row[0] || '').trim();
-        if (!company) { skipped++; return; }
+        const phone   = String(row[6] || '').trim();
 
-        // evita duplicati per nome azienda (case-insensitive)
-        const exists = prospects.some(p => p.company.toLowerCase() === company.toLowerCase());
+        // duplicato se stesso nome azienda O stesso telefono (non vuoto)
+        const exists = prospects.some(p => {
+          const sameName  = p.company.toLowerCase() === company.toLowerCase();
+          const samePhone = phone && p.phone && p.phone.replace(/\s/g,'') === phone.replace(/\s/g,'');
+          return sameName || samePhone;
+        });
         if (exists) { skipped++; return; }
 
         const phone   = String(row[6]  || '').trim();
@@ -1045,9 +1048,9 @@ function importXlsx(event) {
       renderList();
 
       if (added > 0) {
-        showToast(`✅ Importati ${added} prospect${skipped ? ` (${skipped} ignorati)` : ''}`, 'success');
+        showToast(`✅ ${added} importati, ${skipped} già presenti e saltati`, 'success');
       } else {
-        showToast(`Nessun nuovo prospect — ${skipped} già presenti o righe vuote`, 'info');
+        showToast(`Nessun nuovo prospect — ${skipped} già presenti e saltati`, 'info');
       }
     } catch (err) {
       console.error(err);
