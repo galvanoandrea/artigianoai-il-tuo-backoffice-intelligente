@@ -294,9 +294,21 @@ function TrialCard({
           <p className="text-xs text-muted-foreground">
             Alla scadenza del periodo di prova gratuito, l'abbonamento è di{" "}
             <strong>€{PRICE_MONTH}/mese</strong> (oppure <strong>€{PRICE_YEAR}/anno</strong>, 2 mesi
-            gratis).
+            gratis). Puoi abbonarti fin da subito, senza aspettare la scadenza.
           </p>
           <FoundingBanner slotsLeft={foundingSlotsLeft} />
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <IntervalToggle interval={interval} onChange={setInterval} />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={redirecting}
+              onClick={handleSubscribe}
+              className="shrink-0"
+            >
+              {redirecting ? "Caricamento…" : "Abbonati ora"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
