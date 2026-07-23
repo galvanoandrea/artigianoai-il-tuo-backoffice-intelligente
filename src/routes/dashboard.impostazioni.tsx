@@ -12,6 +12,8 @@ import { Save, CalendarClock, CheckCircle2, AlertTriangle, Clock, Crown } from "
 const TRIAL_DAYS = 14;
 const PRICE_MONTH = 15;
 const PRICE_YEAR = 150;
+const REGULAR_PRICE_MONTH = 19;
+const REGULAR_PRICE_YEAR = 190;
 
 type Interval = "month" | "year";
 
@@ -102,6 +104,8 @@ function FoundingBanner({ slotsLeft }: { slotsLeft: number | null }) {
       <span>
         Offerta Founding Member: blocca <strong>€{PRICE_MONTH}/mese a vita</strong> — solo{" "}
         <strong>{slotsLeft}</strong> {slotsLeft === 1 ? "posto rimasto" : "posti rimasti"} su 5.
+        Dopo, il prezzo standard sarà <strong>€{REGULAR_PRICE_MONTH}/mese</strong> (o{" "}
+        <strong>€{REGULAR_PRICE_YEAR}/anno</strong>).
       </span>
     </div>
   );
