@@ -1,16 +1,43 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Wrench, Users, FileText, Sparkles, ShieldCheck, Clock, ArrowRight,
-  Building2, Zap, Star, Package, BarChart3, Printer,
+  Wrench,
+  Users,
+  FileText,
+  Sparkles,
+  ShieldCheck,
+  Clock,
+  ArrowRight,
+  Building2,
+  Zap,
+  Star,
+  Package,
+  BarChart3,
+  Printer,
+  Check,
+  Crown,
 } from "lucide-react";
+import {
+  TRIAL_DAYS,
+  PRICE_MONTH,
+  PRICE_YEAR,
+  REGULAR_PRICE_MONTH,
+  REGULAR_PRICE_YEAR,
+  FOUNDING_SLOTS_TOTAL,
+} from "@/lib/pricing";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "ArtigianoAI — Il backoffice intelligente per artigiani italiani" },
-      { name: "description", content: "Gestisci clienti, preventivi e fornitori in pochi tap. Pensato per elettricisti, idraulici, imprese edili e installatori italiani." },
+      {
+        name: "description",
+        content:
+          "Gestisci clienti, preventivi e fornitori in pochi tap. Pensato per elettricisti, idraulici, imprese edili e installatori italiani.",
+      },
     ],
   }),
   component: Index,
@@ -24,8 +51,8 @@ const features = [
   },
   {
     icon: FileText,
-    title: "Preventivi professionali",
-    text: "Crea preventivi con i tuoi dati azienda, voci dettagliate, IVA automatica. Pronti in meno di un minuto.",
+    title: "Preventivi con AI illimitata",
+    text: "Descrivi il lavoro e l'intelligenza artificiale genera un preventivo professionale in pochi secondi. Nessun limite di generazioni.",
   },
   {
     icon: Package,
@@ -60,16 +87,52 @@ const features = [
 ];
 
 const steps = [
-  { n: "1", title: "Registrati", text: "Crea il tuo account in 30 secondi. Nessuna installazione richiesta." },
-  { n: "2", title: "Configura il profilo", text: "Inserisci nome azienda, P.IVA, indirizzo e recapiti. Appariranno su ogni preventivo." },
-  { n: "3", title: "Aggiungi clienti", text: "Inserisci i tuoi clienti con tutti i dati. Bastano pochi secondi per ogni anagrafica." },
-  { n: "4", title: "Crea preventivi", text: "Scegli il cliente, aggiungi le voci di lavoro, applica l'IVA. Il preventivo è pronto." },
+  {
+    n: "1",
+    title: "Registrati",
+    text: "Crea il tuo account in 30 secondi. Nessuna installazione richiesta.",
+  },
+  {
+    n: "2",
+    title: "Configura il profilo",
+    text: "Inserisci nome azienda, P.IVA, indirizzo e recapiti. Appariranno su ogni preventivo.",
+  },
+  {
+    n: "3",
+    title: "Aggiungi clienti",
+    text: "Inserisci i tuoi clienti con tutti i dati. Bastano pochi secondi per ogni anagrafica.",
+  },
+  {
+    n: "4",
+    title: "Crea preventivi",
+    text: "Scegli il cliente, aggiungi le voci di lavoro, applica l'IVA. Il preventivo è pronto.",
+  },
 ];
 
+const includedInPlan = [
+  "AI illimitata per i preventivi",
+  "Clienti, fornitori e agenda",
+  "Fatture con numerazione automatica",
+  "PDF e stampa con la tua intestazione",
+  "Dati al sicuro sul cloud",
+];
+
+function useFoundingSlots() {
+  const [slotsLeft, setSlotsLeft] = useState<number | null>(null);
+  useEffect(() => {
+    supabase.rpc("founding_slots_remaining").then(({ data, error }) => {
+      if (!error && typeof data === "number") setSlotsLeft(data);
+    });
+  }, []);
+  return slotsLeft;
+}
+
 function Index() {
+  const foundingSlotsLeft = useFoundingSlots();
+  const foundingAvailable = foundingSlotsLeft !== null && foundingSlotsLeft > 0;
+
   return (
     <div className="min-h-screen bg-background">
-
       {/* ── HEADER ── */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -80,15 +143,26 @@ function Index() {
             <span className="font-bold text-lg text-foreground">ArtigianoAI</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
-            <a href="#funzionalita" className="hover:text-foreground transition-colors">Funzionalità</a>
-            <a href="#come-funziona" className="hover:text-foreground transition-colors">Come funziona</a>
+            <a href="#funzionalita" className="hover:text-foreground transition-colors">
+              Funzionalità
+            </a>
+            <a href="#come-funziona" className="hover:text-foreground transition-colors">
+              Come funziona
+            </a>
+            <a href="#prezzi" className="hover:text-foreground transition-colors">
+              Prezzi
+            </a>
           </nav>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="sm">
               <Link to="/login">Accedi</Link>
             </Button>
-            <Button asChild size="sm" className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow">
-              <Link to="/signup">Registrati</Link>
+            <Button
+              asChild
+              size="sm"
+              className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow"
+            >
+              <Link to="/signup">Prova gratis</Link>
             </Button>
           </div>
         </div>
@@ -98,30 +172,49 @@ function Index() {
       <section className="relative overflow-hidden bg-gradient-hero text-primary-foreground">
         <div
           className="absolute inset-0 opacity-20"
-          style={{ backgroundImage: "radial-gradient(circle at 20% 20%, oklch(0.74 0.16 60 / 0.4), transparent 50%), radial-gradient(circle at 80% 80%, oklch(0.40 0.12 255 / 0.6), transparent 50%)" }}
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 20% 20%, oklch(0.74 0.16 60 / 0.4), transparent 50%), radial-gradient(circle at 80% 80%, oklch(0.40 0.12 255 / 0.6), transparent 50%)",
+          }}
         />
         <div className="container mx-auto px-4 py-20 md:py-36 relative">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-sm mb-6">
               <Sparkles className="w-4 h-4 text-accent" />
-              <span>Backoffice intelligente per artigiani italiani</span>
+              <span>Provalo gratis per {TRIAL_DAYS} giorni — nessuna carta richiesta</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-bold leading-[1.1] tracking-tight mb-6">
-              Meno carta,<br />più <span className="text-accent">cantiere</span>.
+              Meno carta,
+              <br />
+              più <span className="text-accent">cantiere</span>.
             </h1>
             <p className="text-lg md:text-xl text-white/80 mb-8 max-w-2xl">
-              Clienti, preventivi e fornitori sempre in ordine. ArtigianoAI è il gestionale pensato per chi lavora con le mani: elettricisti, idraulici, imprese edili, installatori.
+              Clienti, preventivi e fornitori sempre in ordine. ArtigianoAI è il gestionale pensato
+              per chi lavora con le mani: elettricisti, idraulici, imprese edili, installatori.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button asChild size="lg" className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow text-base h-14 px-8">
+              <Button
+                asChild
+                size="lg"
+                className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow text-base h-14 px-8"
+              >
                 <Link to="/signup">
-                  Registrati <ArrowRight className="ml-2 w-5 h-5" />
+                  Provalo gratis per {TRIAL_DAYS} giorni <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-base h-14 px-8">
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-base h-14 px-8"
+              >
                 <Link to="/login">Accedi</Link>
               </Button>
             </div>
+            <p className="text-white/60 text-sm mt-4">
+              Dopo la prova: €{REGULAR_PRICE_MONTH}/mese o €{REGULAR_PRICE_YEAR}/anno — o €
+              {PRICE_MONTH}/mese a vita se sei tra i primi {FOUNDING_SLOTS_TOTAL} iscritti.
+            </p>
           </div>
         </div>
       </section>
@@ -147,13 +240,22 @@ function Index() {
       {/* ── FEATURES ── */}
       <section id="funzionalita" className="container mx-auto px-4 py-20">
         <div className="text-center max-w-2xl mx-auto mb-14">
-          <Badge variant="outline" className="mb-4 text-xs uppercase tracking-wide">Funzionalità</Badge>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Tutto quello che ti serve, niente di superfluo</h2>
-          <p className="text-muted-foreground text-lg">Un gestionale completo, costruito su misura per il lavoro dell'artigiano.</p>
+          <Badge variant="outline" className="mb-4 text-xs uppercase tracking-wide">
+            Funzionalità
+          </Badge>
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+            Tutto quello che ti serve, niente di superfluo
+          </h2>
+          <p className="text-muted-foreground text-lg">
+            Un gestionale completo, costruito su misura per il lavoro dell'artigiano.
+          </p>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {features.map((f) => (
-            <div key={f.title} className="group p-6 rounded-2xl border border-border bg-card hover:shadow-elegant transition-smooth hover:-translate-y-1">
+            <div
+              key={f.title}
+              className="group p-6 rounded-2xl border border-border bg-card hover:shadow-elegant transition-smooth hover:-translate-y-1"
+            >
               <div className="w-11 h-11 rounded-xl bg-gradient-accent grid place-items-center mb-4 shadow-glow">
                 <f.icon className="w-5 h-5 text-accent-foreground" />
               </div>
@@ -168,9 +270,15 @@ function Index() {
       <section id="come-funziona" className="bg-muted/30 border-y border-border py-20">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-14">
-            <Badge variant="outline" className="mb-4 text-xs uppercase tracking-wide">Come funziona</Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Operativo in meno di 5 minuti</h2>
-            <p className="text-muted-foreground text-lg">Nessun manuale, nessuna formazione. Inizia subito.</p>
+            <Badge variant="outline" className="mb-4 text-xs uppercase tracking-wide">
+              Come funziona
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Operativo in meno di 5 minuti
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              Nessun manuale, nessuna formazione. Inizia subito.
+            </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {steps.map((s) => (
@@ -186,23 +294,131 @@ function Index() {
         </div>
       </section>
 
+      {/* ── PRICING ── */}
+      <section id="prezzi" className="container mx-auto px-4 py-20">
+        <div className="text-center max-w-2xl mx-auto mb-6">
+          <Badge variant="outline" className="mb-4 text-xs uppercase tracking-wide">
+            Prezzi
+          </Badge>
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+            Un piano solo, tutto incluso
+          </h2>
+          <p className="text-muted-foreground text-lg">
+            Prova gratis per {TRIAL_DAYS} giorni. Nessun tetto sulle generazioni AI, nessuna
+            sorpresa in fattura.
+          </p>
+        </div>
+
+        {foundingAvailable && (
+          <div className="max-w-2xl mx-auto mb-10 flex items-center gap-3 rounded-2xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 px-5 py-4">
+            <div className="w-9 h-9 rounded-full bg-amber-400/20 grid place-items-center shrink-0">
+              <Crown className="w-4 h-4 text-amber-600" />
+            </div>
+            <p className="text-sm text-amber-800 dark:text-amber-300">
+              <strong>Offerta Founding Member</strong> — i primi {FOUNDING_SLOTS_TOTAL} che si
+              abbonano bloccano il prezzo a <strong>€{PRICE_MONTH}/mese a vita</strong> (o €
+              {PRICE_YEAR}/anno), anche quando il prezzo standard sale. Solo{" "}
+              <strong>{foundingSlotsLeft}</strong>{" "}
+              {foundingSlotsLeft === 1 ? "posto rimasto" : "posti rimasti"} su{" "}
+              {FOUNDING_SLOTS_TOTAL}.
+            </p>
+          </div>
+        )}
+
+        <div className="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+          {/* Mensile */}
+          <div className="relative p-8 rounded-3xl border border-border bg-card flex flex-col">
+            <h3 className="font-semibold text-foreground mb-1">Mensile</h3>
+            <p className="text-muted-foreground text-sm mb-6">Flessibile, disdici quando vuoi.</p>
+            <div className="mb-6">
+              <span className="text-4xl font-bold text-foreground">€{REGULAR_PRICE_MONTH}</span>
+              <span className="text-muted-foreground">/mese</span>
+              {foundingAvailable && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
+                  €{PRICE_MONTH}/mese se sei tra i primi {FOUNDING_SLOTS_TOTAL}
+                </p>
+              )}
+            </div>
+            <ul className="space-y-3 mb-8 flex-1">
+              {includedInPlan.map((item) => (
+                <li key={item} className="flex items-start gap-2.5 text-sm text-foreground">
+                  <Check className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <Button asChild size="lg" variant="outline" className="w-full">
+              <Link to="/signup">Prova gratis {TRIAL_DAYS} giorni</Link>
+            </Button>
+          </div>
+
+          {/* Annuale */}
+          <div className="relative p-8 rounded-3xl border-2 border-accent bg-card flex flex-col shadow-elegant">
+            <Badge className="absolute -top-3 left-8 bg-gradient-accent text-accent-foreground shadow-glow">
+              2 mesi gratis
+            </Badge>
+            <h3 className="font-semibold text-foreground mb-1">Annuale</h3>
+            <p className="text-muted-foreground text-sm mb-6">Il prezzo più conveniente.</p>
+            <div className="mb-6">
+              <span className="text-4xl font-bold text-foreground">€{REGULAR_PRICE_YEAR}</span>
+              <span className="text-muted-foreground">/anno</span>
+              {foundingAvailable && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
+                  €{PRICE_YEAR}/anno se sei tra i primi {FOUNDING_SLOTS_TOTAL}
+                </p>
+              )}
+            </div>
+            <ul className="space-y-3 mb-8 flex-1">
+              {includedInPlan.map((item) => (
+                <li key={item} className="flex items-start gap-2.5 text-sm text-foreground">
+                  <Check className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <Button
+              asChild
+              size="lg"
+              className="w-full bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow"
+            >
+              <Link to="/signup">Prova gratis {TRIAL_DAYS} giorni</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* ── FINAL CTA ── */}
       <section className="container mx-auto px-4 py-20">
         <div className="rounded-3xl bg-gradient-hero text-primary-foreground p-10 md:p-16 text-center shadow-elegant relative overflow-hidden">
           <div
             className="absolute inset-0 opacity-20"
-            style={{ backgroundImage: "radial-gradient(circle at 30% 30%, oklch(0.74 0.16 60 / 0.5), transparent 50%)" }}
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 30% 30%, oklch(0.74 0.16 60 / 0.5), transparent 50%)",
+            }}
           />
           <div className="relative">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Pronto a lavorare meglio?</h2>
             <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
-              Inizia subito a gestire clienti e preventivi in modo professionale.
+              Prova gratis per {TRIAL_DAYS} giorni, nessuna carta richiesta. Inizia a gestire
+              clienti e preventivi in modo professionale.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button asChild size="lg" className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow h-14 px-10 text-base font-semibold">
-                <Link to="/signup">Registrati <ArrowRight className="ml-2 w-5 h-5" /></Link>
+              <Button
+                asChild
+                size="lg"
+                className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow h-14 px-10 text-base font-semibold"
+              >
+                <Link to="/signup">
+                  Provalo gratis <ArrowRight className="ml-2 w-5 h-5" />
+                </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-base h-14 px-8">
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-base h-14 px-8"
+              >
                 <Link to="/login">Accedi</Link>
               </Button>
             </div>
@@ -214,7 +430,6 @@ function Index() {
       <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
         © {new Date().getFullYear()} ArtigianoAI — Fatto con cura in Italia
       </footer>
-
     </div>
   );
 }
