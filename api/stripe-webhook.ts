@@ -39,7 +39,10 @@ export default async function handler(req: any, res: any) {
   });
 
   const updateByCustomer = async (customerId: string, patch: Record<string, unknown>) => {
-    await supabase.from("profiles").update(patch as any).eq("stripe_customer_id", customerId);
+    await supabase
+      .from("profiles")
+      .update(patch as any)
+      .eq("stripe_customer_id", customerId);
   };
 
   switch (event.type) {
@@ -47,11 +50,36 @@ export default async function handler(req: any, res: any) {
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.mode === "subscription" && session.customer) {
         const userId = session.metadata?.userId;
+        const interval = session.metadata?.interval === "year" ? "year" : "month";
         if (userId) {
           await supabase
             .from("profiles")
-            .update({ stripe_customer_id: session.customer as string, subscription_status: "active" } as any)
+            .update({
+              stripe_customer_id: session.customer as string,
+              subscription_status: "active",
+              billing_interval: interval,
+            } as any)
             .eq("id", userId);
+        }
+      }
+      break;
+    }
+    case "checkout.session.expired": {
+      // A founding-member slot was claimed at session creation but payment never completed — give it back.
+      const session = event.data.object as Stripe.Checkout.Session;
+      const userId = session.metadata?.userId;
+      if (session.metadata?.founding === "true" && userId) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("subscription_status")
+          .eq("id", userId)
+          .maybeSingle();
+        if ((prof as any)?.subscription_status !== "active") {
+          await supabase
+            .from("profiles")
+            .update({ is_founding_member: false } as any)
+            .eq("id", userId);
+          await supabase.rpc("release_founding_slot");
         }
       }
       break;
