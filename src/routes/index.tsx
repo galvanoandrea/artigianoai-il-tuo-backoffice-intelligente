@@ -127,76 +127,6 @@ function useFoundingSlots() {
   return slotsLeft;
 }
 
-const mockQuoteLines = [
-  { desc: "Sostituzione quadro elettrico", qty: "1 a corpo", price: "€480" },
-  { desc: "Manodopera specializzata", qty: "6 h", price: "€270" },
-  { desc: "Materiali e componentistica", qty: "1 a corpo", price: "€210" },
-];
-
-function HeroProductMockup() {
-  return (
-    <div className="relative mx-auto max-w-md lg:max-w-none">
-      <div className="absolute -inset-6 bg-accent/20 blur-3xl rounded-full" aria-hidden="true" />
-      <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-elegant bg-card text-card-foreground">
-        <div className="h-9 flex items-center gap-1.5 px-3 bg-muted/60 border-b border-border">
-          <span className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
-          <span className="w-2.5 h-2.5 rounded-full bg-accent/60" />
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
-          <span className="ml-3 text-[11px] text-muted-foreground truncate">
-            artigianoai.vercel.app/dashboard/preventivi
-          </span>
-        </div>
-        <div className="p-5">
-          <div className="flex items-start justify-between gap-3 mb-1">
-            <div>
-              <p className="text-sm font-semibold text-foreground">Preventivo #2026-014</p>
-              <p className="text-xs text-muted-foreground">Rossi Impianti S.r.l.</p>
-            </div>
-            <Badge
-              variant="outline"
-              className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-transparent shrink-0"
-            >
-              Accettato
-            </Badge>
-          </div>
-          <div className="mt-4 rounded-lg border border-border overflow-hidden">
-            <table className="w-full text-xs">
-              <tbody>
-                {mockQuoteLines.map((l) => (
-                  <tr key={l.desc} className="border-b border-border last:border-0">
-                    <td className="py-2 px-3 text-foreground">{l.desc}</td>
-                    <td className="py-2 px-3 text-muted-foreground text-right whitespace-nowrap">
-                      {l.qty}
-                    </td>
-                    <td className="py-2 px-3 text-right font-medium text-foreground whitespace-nowrap">
-                      {l.price}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-            <span className="text-xs text-muted-foreground">Totale (IVA incl.)</span>
-            <span className="text-base font-bold text-foreground">€1.170</span>
-          </div>
-          <div className="mt-4 inline-flex items-center gap-1.5 text-[11px] text-accent-foreground bg-gradient-accent rounded-full px-3 py-1.5 shadow-glow">
-            <Sparkles className="w-3 h-3" />
-            Generato con AI in 12 secondi
-          </div>
-        </div>
-      </div>
-      <div className="hidden lg:flex absolute -bottom-5 -left-5 items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 shadow-elegant">
-        <Users className="w-4 h-4 text-accent" />
-        <div className="leading-tight">
-          <p className="text-xs font-semibold text-foreground">+38 clienti</p>
-          <p className="text-[11px] text-muted-foreground">gestiti in un posto solo</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function Index() {
   const foundingSlotsLeft = useFoundingSlots();
   const foundingAvailable = foundingSlotsLeft !== null && foundingSlotsLeft > 0;
@@ -247,48 +177,44 @@ function Index() {
               "radial-gradient(circle at 20% 20%, oklch(0.74 0.16 60 / 0.4), transparent 50%), radial-gradient(circle at 80% 80%, oklch(0.40 0.12 255 / 0.6), transparent 50%)",
           }}
         />
-        <div className="container mx-auto px-4 py-20 md:py-32 relative">
-          <div className="grid lg:grid-cols-2 gap-14 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-sm mb-6">
-                <Sparkles className="w-4 h-4 text-accent" />
-                <span>Provalo gratis per {TRIAL_DAYS} giorni — nessuna carta richiesta</span>
-              </div>
-              <h1 className="text-4xl md:text-6xl font-bold leading-[1.1] tracking-tight mb-6">
-                Meno carta,
-                <br />
-                più <span className="text-accent">cantiere</span>.
-              </h1>
-              <p className="text-lg md:text-xl text-white/80 mb-8 max-w-2xl">
-                Clienti, preventivi e fornitori sempre in ordine. ArtigianoAI è il gestionale
-                pensato per chi lavora con le mani: elettricisti, idraulici, imprese edili,
-                installatori.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  asChild
-                  size="lg"
-                  className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow text-base h-14 px-8"
-                >
-                  <Link to="/signup">
-                    Provalo gratis per {TRIAL_DAYS} giorni <ArrowRight className="ml-2 w-5 h-5" />
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-base h-14 px-8"
-                >
-                  <Link to="/login">Accedi</Link>
-                </Button>
-              </div>
-              <p className="text-white/60 text-sm mt-4">
-                Dopo la prova: €{REGULAR_PRICE_MONTH}/mese o €{REGULAR_PRICE_YEAR}/anno — o €
-                {PRICE_MONTH}/mese a vita se sei tra i primi {FOUNDING_SLOTS_TOTAL} iscritti.
-              </p>
+        <div className="container mx-auto px-4 py-20 md:py-36 relative">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-sm mb-6">
+              <Sparkles className="w-4 h-4 text-accent" />
+              <span>Provalo gratis per {TRIAL_DAYS} giorni — nessuna carta richiesta</span>
             </div>
-            <HeroProductMockup />
+            <h1 className="text-4xl md:text-6xl font-bold leading-[1.1] tracking-tight mb-6">
+              Meno carta,
+              <br />
+              più <span className="text-accent">cantiere</span>.
+            </h1>
+            <p className="text-lg md:text-xl text-white/80 mb-8 max-w-2xl">
+              Clienti, preventivi e fornitori sempre in ordine. ArtigianoAI è il gestionale pensato
+              per chi lavora con le mani: elettricisti, idraulici, imprese edili, installatori.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                asChild
+                size="lg"
+                className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow text-base h-14 px-8"
+              >
+                <Link to="/signup">
+                  Provalo gratis per {TRIAL_DAYS} giorni <ArrowRight className="ml-2 w-5 h-5" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-base h-14 px-8"
+              >
+                <Link to="/login">Accedi</Link>
+              </Button>
+            </div>
+            <p className="text-white/60 text-sm mt-4">
+              Dopo la prova: €{REGULAR_PRICE_MONTH}/mese o €{REGULAR_PRICE_YEAR}/anno — o €
+              {PRICE_MONTH}/mese a vita se sei tra i primi {FOUNDING_SLOTS_TOTAL} iscritti.
+            </p>
           </div>
         </div>
       </section>
