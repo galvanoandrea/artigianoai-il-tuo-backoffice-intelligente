@@ -396,6 +396,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      founding_slots_remaining: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
     }
     Enums: {
       app_role: "admin" | "user"
