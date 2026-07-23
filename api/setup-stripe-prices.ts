@@ -2,6 +2,7 @@ import Stripe from "stripe";
 
 // Temporary one-off setup endpoint — creates the founding-member pricing Price objects
 // and registers checkout.session.expired on the existing webhook. Removed after use.
+// redeploy-trigger: pick up STRIPE_SECRET_KEY now configured in Vercel
 const SETUP_TOKEN = "ab548645709594b0dd5f65a8929b24a3534d5c0407ed18ef";
 
 export default async function handler(req: any, res: any) {
