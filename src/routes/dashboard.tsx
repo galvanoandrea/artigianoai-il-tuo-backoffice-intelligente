@@ -1,5 +1,5 @@
-import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -15,7 +15,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { LogOut, User } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LogOut, User, Lock } from "lucide-react";
+
+const TRIAL_DAYS = 14;
+
+function isTrialExpired(approvedAt: string | null | undefined): boolean {
+  if (!approvedAt) return false;
+  const expiresAt = new Date(approvedAt).getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000;
+  return Date.now() > expiresAt;
+}
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardLayout,
@@ -24,6 +33,10 @@ export const Route = createFileRoute("/dashboard")({
 function DashboardLayout() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const currentPath = useRouterState({ select: (s) => s.location.pathname });
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [accessChecked, setAccessChecked] = useState(false);
+  const [blocked, setBlocked] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
@@ -35,18 +48,41 @@ function DashboardLayout() {
     (async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("approved")
+        .select("*")
         .eq("id", user.id)
         .single();
       if (cancelled) return;
-      if (!error && data && data.approved === false) {
+      if (!error && data && (data as any).approved === false) {
         navigate({ to: "/pending-approval" });
+        return;
       }
+      const approvedAt = (data as any)?.approved_at ?? null;
+      const subscriptionStatus = (data as any)?.subscription_status ?? null;
+      setBlocked(subscriptionStatus !== "active" && isTrialExpired(approvedAt));
+      setAccessChecked(true);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [loading, user, navigate]);
 
-  const userName: string = user?.user_metadata?.nome_completo || user?.email?.split("@")[0] || "Utente";
+  useEffect(() => {
+    if (loading || !user) return;
+    let cancelled = false;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled || !session?.access_token) return;
+      fetch("/api/admin", { headers: { Authorization: `Bearer ${session.access_token}` } })
+        .then((r) => r.json())
+        .then((r) => !cancelled && setIsAdmin(!!r.isAdmin))
+        .catch(() => !cancelled && setIsAdmin(false));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, user]);
+
+  const userName: string =
+    user?.user_metadata?.nome_completo || user?.email?.split("@")[0] || "Utente";
   const initials = userName
     .split(" ")
     .map((p) => p[0])
@@ -59,9 +95,13 @@ function DashboardLayout() {
     navigate({ to: "/login" });
   };
 
-  if (loading || !user) {
-    return <div className="min-h-screen grid place-items-center text-muted-foreground">Caricamento…</div>;
+  if (loading || !user || !accessChecked) {
+    return (
+      <div className="min-h-screen grid place-items-center text-muted-foreground">Caricamento…</div>
+    );
   }
+
+  const showPaywall = blocked && !isAdmin && currentPath !== "/dashboard/impostazioni";
 
   return (
     <SidebarProvider>
@@ -105,10 +145,34 @@ function DashboardLayout() {
             </DropdownMenu>
           </header>
           <main className="flex-1 p-4 md:p-6">
-            <Outlet />
+            {showPaywall ? <TrialExpiredPaywall /> : <Outlet />}
           </main>
         </div>
       </div>
     </SidebarProvider>
+  );
+}
+
+function TrialExpiredPaywall() {
+  return (
+    <div className="max-w-md mx-auto mt-12">
+      <Card className="border-destructive/40">
+        <CardHeader className="items-center text-center">
+          <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-2">
+            <Lock className="w-6 h-6 text-destructive" />
+          </div>
+          <CardTitle>Periodo di prova scaduto</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Il periodo di prova gratuito è terminato. Abbonati per continuare a usare ArtigianoAI —
+            clienti, preventivi, fatture e tutto il resto.
+          </p>
+          <Button asChild className="gap-2">
+            <Link to="/dashboard/impostazioni">Abbonati ora</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
