@@ -17,8 +17,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogOut, User, Lock } from "lucide-react";
-
-const TRIAL_DAYS = 14;
+import { TRIAL_DAYS } from "@/lib/pricing";
 
 function isTrialExpired(approvedAt: string | null | undefined): boolean {
   if (!approvedAt) return false;

@@ -8,12 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Save, CalendarClock, CheckCircle2, AlertTriangle, Clock, Crown } from "lucide-react";
-
-const TRIAL_DAYS = 14;
-const PRICE_MONTH = 15;
-const PRICE_YEAR = 150;
-const REGULAR_PRICE_MONTH = 19;
-const REGULAR_PRICE_YEAR = 190;
+import { TRIAL_DAYS, PRICE_MONTH, PRICE_YEAR, REGULAR_PRICE_MONTH, REGULAR_PRICE_YEAR } from "@/lib/pricing";
 
 type Interval = "month" | "year";
 
