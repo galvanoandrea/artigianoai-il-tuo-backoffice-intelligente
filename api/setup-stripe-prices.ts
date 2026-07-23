@@ -5,8 +5,11 @@ import Stripe from "stripe";
 const SETUP_TOKEN = "ab548645709594b0dd5f65a8929b24a3534d5c0407ed18ef";
 
 export default async function handler(req: any, res: any) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-  if (req.headers["x-setup-token"] !== SETUP_TOKEN) return res.status(401).json({ error: "Unauthorized" });
+  if (req.method !== "POST" && req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+  const token = req.headers["x-setup-token"] || req.query?.token;
+  if (token !== SETUP_TOKEN) return res.status(401).json({ error: "Unauthorized" });
 
   const stripeKey = process.env.STRIPE_SECRET_KEY;
   if (!stripeKey) return res.status(500).json({ error: "STRIPE_SECRET_KEY non configurata" });
