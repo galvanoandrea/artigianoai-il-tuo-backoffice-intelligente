@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Wrench,
   Users,
   FileText,
   Sparkles,
@@ -19,6 +19,7 @@ import {
   Printer,
   Check,
   Crown,
+  Wrench,
 } from "lucide-react";
 import {
   TRIAL_DAYS,
@@ -137,9 +138,7 @@ function Index() {
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-accent grid place-items-center shadow-glow">
-              <Wrench className="w-5 h-5 text-accent-foreground" />
-            </div>
+            <Logo className="w-9 h-9" />
             <span className="font-bold text-lg text-foreground">ArtigianoAI</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">

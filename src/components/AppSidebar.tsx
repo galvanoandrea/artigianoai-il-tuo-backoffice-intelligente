@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Users, FileText, Settings, Wrench, LayoutDashboard, ShieldCheck, Building2, CalendarDays, Receipt } from "lucide-react";
+import { Logo } from "@/components/Logo";
+import { Users, FileText, Settings, LayoutDashboard, ShieldCheck, Building2, CalendarDays, Receipt } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -50,9 +51,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-2">
-          <div className="w-9 h-9 rounded-xl bg-gradient-accent grid place-items-center shadow-glow shrink-0">
-            <Wrench className="w-5 h-5 text-accent-foreground" />
-          </div>
+          <Logo className="w-9 h-9 shrink-0" />
           <span className="font-bold text-base text-sidebar-foreground group-data-[collapsible=icon]:hidden">
             ArtigianoAI
           </span>
