@@ -76,6 +76,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "ArtigianoAI — Backoffice per artigiani" },
       { name: "description", content: "Gestisci clienti e preventivi senza fatica. Pensato per elettricisti, idraulici, edili e installatori." },
       { name: "author", content: "ArtigianoAI" },
+      // Nome sotto l'icona quando il sito viene aggiunto alla schermata Home:
+      // senza questo iOS usa il <title>, che è troppo lungo e viene troncato.
+      { name: "apple-mobile-web-app-title", content: "ArtigianoAI" },
+      { name: "theme-color", content: "#F28F29" },
       { property: "og:title", content: "ArtigianoAI — Backoffice per artigiani" },
       { property: "og:description", content: "Gestisci clienti e preventivi senza fatica. Pensato per elettricisti, idraulici, edili e installatori." },
       { property: "og:type", content: "website" },
@@ -91,6 +95,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
+      // Icona della schermata Home su iOS: deve essere un PNG opaco, iOS non
+      // legge né SVG né il manifest per questo.
+      { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
+      { rel: "icon", type: "image/svg+xml", href: "/icon.svg" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
+      { rel: "manifest", href: "/site.webmanifest" },
     ],
   }),
   shellComponent: RootShell,
