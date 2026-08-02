@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Logo } from "@/components/Logo";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Wrench, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({
@@ -42,9 +43,7 @@ function ForgotPasswordPage() {
       <div className="hidden md:flex bg-gradient-hero text-primary-foreground p-12 flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "radial-gradient(circle at 30% 30%, oklch(0.74 0.16 60 / 0.5), transparent 50%)" }} />
         <Link to="/" className="flex items-center gap-2 relative">
-          <div className="w-9 h-9 rounded-xl bg-gradient-accent grid place-items-center shadow-glow">
-            <Wrench className="w-5 h-5 text-accent-foreground" />
-          </div>
+          <Logo className="w-9 h-9" />
           <span className="font-bold text-lg">ArtigianoAI</span>
         </Link>
         <div className="relative">
