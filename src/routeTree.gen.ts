@@ -19,6 +19,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AcceptInviteRouteImport } from './routes/accept-invite'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
+import { Route as PreventivoTokenRouteImport } from './routes/preventivo.$token'
 import { Route as DashboardPreventiviRouteImport } from './routes/dashboard.preventivi'
 import { Route as DashboardImpostazioniRouteImport } from './routes/dashboard.impostazioni'
 import { Route as DashboardFornitoriRouteImport } from './routes/dashboard.fornitori'
@@ -77,6 +78,11 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardRoute,
 } as any)
+const PreventivoTokenRoute = PreventivoTokenRouteImport.update({
+  id: '/preventivo/$token',
+  path: '/preventivo/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardPreventiviRoute = DashboardPreventiviRouteImport.update({
   id: '/preventivi',
   path: '/preventivi',
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/fornitori': typeof DashboardFornitoriRoute
   '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
   '/dashboard/preventivi': typeof DashboardPreventiviRoute
+  '/preventivo/$token': typeof PreventivoTokenRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
@@ -148,6 +155,7 @@ export interface FileRoutesByTo {
   '/dashboard/fornitori': typeof DashboardFornitoriRoute
   '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
   '/dashboard/preventivi': typeof DashboardPreventiviRoute
+  '/preventivo/$token': typeof PreventivoTokenRoute
   '/dashboard': typeof DashboardIndexRoute
 }
 export interface FileRoutesById {
@@ -168,6 +176,7 @@ export interface FileRoutesById {
   '/dashboard/fornitori': typeof DashboardFornitoriRoute
   '/dashboard/impostazioni': typeof DashboardImpostazioniRoute
   '/dashboard/preventivi': typeof DashboardPreventiviRoute
+  '/preventivo/$token': typeof PreventivoTokenRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
@@ -189,6 +198,7 @@ export interface FileRouteTypes {
     | '/dashboard/fornitori'
     | '/dashboard/impostazioni'
     | '/dashboard/preventivi'
+    | '/preventivo/$token'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/dashboard/fornitori'
     | '/dashboard/impostazioni'
     | '/dashboard/preventivi'
+    | '/preventivo/$token'
     | '/dashboard'
   id:
     | '__root__'
@@ -226,6 +237,7 @@ export interface FileRouteTypes {
     | '/dashboard/fornitori'
     | '/dashboard/impostazioni'
     | '/dashboard/preventivi'
+    | '/preventivo/$token'
     | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
@@ -239,6 +251,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
   SubscribeSuccessRoute: typeof SubscribeSuccessRoute
+  PreventivoTokenRoute: typeof PreventivoTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -312,6 +325,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRoute
+    }
+    '/preventivo/$token': {
+      id: '/preventivo/$token'
+      path: '/preventivo/$token'
+      fullPath: '/preventivo/$token'
+      preLoaderRoute: typeof PreventivoTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/dashboard/preventivi': {
       id: '/dashboard/preventivi'
@@ -401,6 +421,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
   SubscribeSuccessRoute: SubscribeSuccessRoute,
+  PreventivoTokenRoute: PreventivoTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

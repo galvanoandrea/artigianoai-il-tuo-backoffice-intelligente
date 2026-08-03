@@ -25,7 +25,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Plus, Search, MoreVertical, Pencil, Trash2, Eye, FileText, Printer, X, Receipt,
+  Plus, Search, MoreVertical, Pencil, Trash2, Eye, FileText, Printer, X, Receipt, Send,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useClients } from "@/lib/clients-store";
@@ -33,9 +33,10 @@ import { useNavigate } from "@tanstack/react-router";
 import {
   useQuotes, addQuote, updateQuote, deleteQuote, setQuoteStatus,
   calcTotals, formatEuro, formatDate,
-  type Quote, type QuoteStatus,
+  type Quote, type QuoteDraft, type QuoteStatus,
 } from "@/lib/quotes-store";
 import { QuoteForm } from "@/components/QuoteForm";
+import { SendQuoteDialog } from "@/components/SendQuoteDialog";
 
 export const Route = createFileRoute("/dashboard/preventivi")({
   component: PreventiviPage,
@@ -128,14 +129,14 @@ function PreventiviPage() {
   const hasFilters = !!search || statoFilter !== "all" || clienteFilter !== "all";
   const clearFilters = () => { setSearch(""); setStatoFilter("all"); setClienteFilter("all"); };
 
-  const handleCreate = async (data: Omit<Quote, "id" | "numero">): Promise<void> => {
+  const handleCreate = async (data: QuoteDraft): Promise<void> => {
     const ok = await addQuote(data);
     if (!ok) return;
     setCreateOpen(false);
     toast.success("Preventivo creato con successo");
   };
 
-  const handleUpdate = async (data: Omit<Quote, "id" | "numero">): Promise<void> => {
+  const handleUpdate = async (data: QuoteDraft): Promise<void> => {
     if (!editing) return;
     const ok = await updateQuote(editing.id, data);
     if (!ok) return;
@@ -384,9 +385,19 @@ function QuoteDetail({
   onStatusChange: (s: QuoteStatus) => void;
 }) {
   const totals = calcTotals(quote.voci, quote.ivaPercentuale);
+  const [invioAperto, setInvioAperto] = useState(false);
 
   return (
     <>
+      <SendQuoteDialog
+        quote={quote}
+        clientName={clientFull?.referente || clientName}
+        clientEmail={clientFull?.email}
+        clientPhone={clientFull?.telefono}
+        azienda={company.nome}
+        open={invioAperto}
+        onOpenChange={setInvioAperto}
+      />
       <DialogHeader className="print:hidden">
         <DialogTitle className="flex items-center gap-2">
           Preventivo {quote.numero}
@@ -488,8 +499,14 @@ function QuoteDetail({
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button onClick={() => window.print()} className="bg-gradient-accent text-accent-foreground hover:opacity-90">
+        <Button variant="outline" onClick={() => window.print()}>
           <Printer className="h-4 w-4" /> Stampa / PDF
+        </Button>
+        <Button
+          onClick={() => setInvioAperto(true)}
+          className="bg-gradient-accent text-accent-foreground hover:opacity-90"
+        >
+          <Send className="h-4 w-4" /> Invia al cliente
         </Button>
       </div>
     </>
