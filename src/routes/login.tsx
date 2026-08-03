@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,7 +40,7 @@ function LoginPage() {
     });
     setLoading(false);
     if (error) {
-      toast.error("Accesso fallito", { description: error.message });
+      toast.error("Accesso fallito", { description: authErrorMessage(error) });
       return;
     }
     toast.success("Bentornato!");

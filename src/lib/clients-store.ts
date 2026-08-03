@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -82,7 +83,7 @@ export async function loadClients() {
       .order("created_at", { ascending: false });
     if (error) {
       console.error("[clients-store] load error:", error);
-      toast.error(`Errore caricamento clienti: ${error.message}`);
+      toast.error(`Errore caricamento clienti: ${authErrorMessage(error)}`);
       return;
     }
     clients = (data ?? []).map((r) => rowToClient(r as unknown as Row));
@@ -130,7 +131,7 @@ export async function addClient(data: Omit<Client, "id">): Promise<boolean> {
     .single();
   if (error || !row) {
     console.error("[clients-store] add error:", error);
-    toast.error(`Errore salvataggio cliente: ${error?.message ?? "risposta vuota"}`);
+    toast.error(`Errore salvataggio cliente: ${authErrorMessage(error, "risposta vuota")}`);
     return false;
   }
   clients = [rowToClient(row as unknown as Row), ...clients];
@@ -148,7 +149,7 @@ export async function updateClient(id: string, data: Omit<Client, "id">): Promis
     .single();
   if (error || !row) {
     console.error("[clients-store] update error:", error);
-    toast.error(`Errore aggiornamento cliente: ${error?.message ?? "risposta vuota"}`);
+    toast.error(`Errore aggiornamento cliente: ${authErrorMessage(error, "risposta vuota")}`);
     return false;
   }
   clients = clients.map((c) => (c.id === id ? rowToClient(row as unknown as Row) : c));
@@ -160,7 +161,7 @@ export async function deleteClient(id: string): Promise<boolean> {
   const { error } = await supabase.from("clients").delete().eq("id", id);
   if (error) {
     console.error("[clients-store] delete error:", error);
-    toast.error(`Errore eliminazione cliente: ${error.message}`);
+    toast.error(`Errore eliminazione cliente: ${authErrorMessage(error)}`);
     return false;
   }
   clients = clients.filter((c) => c.id !== id);

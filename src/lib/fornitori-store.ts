@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -110,7 +111,7 @@ export async function loadFornitori() {
       .from("fornitori")
       .select("*")
       .order("created_at", { ascending: false });
-    if (error) { console.error("[fornitori-store] load F error:", error); toast.error(`Errore caricamento fornitori: ${error.message}`); return; }
+    if (error) { console.error("[fornitori-store] load F error:", error); toast.error(`Errore caricamento fornitori: ${authErrorMessage(error)}`); return; }
     fornitori = (data ?? []).map((r) => rowToFornitore(r as FRow));
     loadedF = true;
     emitF();
@@ -125,7 +126,7 @@ export async function loadPagamenti() {
       .from("pagamenti")
       .select("*")
       .order("data_scadenza", { ascending: true });
-    if (error) { console.error("[fornitori-store] load P error:", error); toast.error(`Errore caricamento pagamenti: ${error.message}`); return; }
+    if (error) { console.error("[fornitori-store] load P error:", error); toast.error(`Errore caricamento pagamenti: ${authErrorMessage(error)}`); return; }
     pagamenti = (data ?? []).map((r) => rowToPagamento(r as PRow));
     loadedP = true;
     emitP();
@@ -167,7 +168,7 @@ export async function addFornitore(data: Omit<Fornitore, "id">): Promise<boolean
     .insert({ ...fornitoreToRow(data), user_id: userData.user.id })
     .select()
     .single();
-  if (error || !row) { console.error("[fornitori-store] add F error:", error); toast.error(`Errore salvataggio fornitore: ${error?.message ?? "risposta vuota"}`); return false; }
+  if (error || !row) { console.error("[fornitori-store] add F error:", error); toast.error(`Errore salvataggio fornitore: ${authErrorMessage(error, "risposta vuota")}`); return false; }
   fornitori = [rowToFornitore(row as FRow), ...fornitori];
   emitF();
   return true;
@@ -180,7 +181,7 @@ export async function updateFornitore(id: string, data: Omit<Fornitore, "id">): 
     .eq("id", id)
     .select()
     .single();
-  if (error || !row) { console.error("[fornitori-store] update F error:", error); toast.error(`Errore aggiornamento fornitore: ${error?.message ?? "risposta vuota"}`); return false; }
+  if (error || !row) { console.error("[fornitori-store] update F error:", error); toast.error(`Errore aggiornamento fornitore: ${authErrorMessage(error, "risposta vuota")}`); return false; }
   fornitori = fornitori.map((f) => (f.id === id ? rowToFornitore(row as FRow) : f));
   emitF();
   return true;
@@ -188,7 +189,7 @@ export async function updateFornitore(id: string, data: Omit<Fornitore, "id">): 
 
 export async function deleteFornitore(id: string): Promise<boolean> {
   const { error } = await supabase.from("fornitori").delete().eq("id", id);
-  if (error) { console.error("[fornitori-store] delete F error:", error); toast.error(`Errore eliminazione fornitore: ${error.message}`); return false; }
+  if (error) { console.error("[fornitori-store] delete F error:", error); toast.error(`Errore eliminazione fornitore: ${authErrorMessage(error)}`); return false; }
   fornitori = fornitori.filter((f) => f.id !== id);
   pagamenti = pagamenti.filter((p) => p.fornitoreId !== id);
   emitF(); emitP();
@@ -207,7 +208,7 @@ export async function addPagamento(data: Omit<Pagamento, "id">): Promise<boolean
     .insert({ ...pagamentoToRow(data), user_id: userData.user.id })
     .select()
     .single();
-  if (error || !row) { console.error("[fornitori-store] add P error:", error); toast.error(`Errore salvataggio pagamento: ${error?.message ?? "risposta vuota"}`); return false; }
+  if (error || !row) { console.error("[fornitori-store] add P error:", error); toast.error(`Errore salvataggio pagamento: ${authErrorMessage(error, "risposta vuota")}`); return false; }
   pagamenti = [rowToPagamento(row as PRow), ...pagamenti];
   emitP();
   return true;
@@ -220,7 +221,7 @@ export async function updatePagamento(id: string, data: Omit<Pagamento, "id">): 
     .eq("id", id)
     .select()
     .single();
-  if (error || !row) { console.error("[fornitori-store] update P error:", error); toast.error(`Errore aggiornamento pagamento: ${error?.message ?? "risposta vuota"}`); return false; }
+  if (error || !row) { console.error("[fornitori-store] update P error:", error); toast.error(`Errore aggiornamento pagamento: ${authErrorMessage(error, "risposta vuota")}`); return false; }
   pagamenti = pagamenti.map((p) => (p.id === id ? rowToPagamento(row as PRow) : p));
   emitP();
   return true;
@@ -228,7 +229,7 @@ export async function updatePagamento(id: string, data: Omit<Pagamento, "id">): 
 
 export async function deletePagamento(id: string): Promise<boolean> {
   const { error } = await supabase.from("pagamenti").delete().eq("id", id);
-  if (error) { console.error("[fornitori-store] delete P error:", error); toast.error(`Errore eliminazione pagamento: ${error.message}`); return false; }
+  if (error) { console.error("[fornitori-store] delete P error:", error); toast.error(`Errore eliminazione pagamento: ${authErrorMessage(error)}`); return false; }
   pagamenti = pagamenti.filter((p) => p.id !== id);
   emitP();
   return true;
@@ -242,7 +243,7 @@ export async function segnaComePagato(id: string): Promise<boolean> {
     .eq("id", id)
     .select()
     .single();
-  if (error || !row) { console.error("[fornitori-store] segna pagato error:", error); toast.error(`Errore: ${error?.message ?? "risposta vuota"}`); return false; }
+  if (error || !row) { console.error("[fornitori-store] segna pagato error:", error); toast.error(`Errore: ${authErrorMessage(error, "risposta vuota")}`); return false; }
   pagamenti = pagamenti.map((p) => (p.id === id ? rowToPagamento(row as PRow) : p));
   emitP();
   return true;

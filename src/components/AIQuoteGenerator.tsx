@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { Mic, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -160,7 +161,7 @@ export function AIQuoteGenerator({
       toast.success("Preventivo generato con successo! Puoi modificare i valori prima di salvare.");
     } catch (err: any) {
       console.error("[AIQuoteGenerator]", err);
-      toast.error(`Errore di rete: ${err?.message || String(err)}`, { duration: 10000 });
+      toast.error(`Errore di rete: ${authErrorMessage(err, String(err))}`, { duration: 10000 });
     } finally {
       setLoading(false);
     }

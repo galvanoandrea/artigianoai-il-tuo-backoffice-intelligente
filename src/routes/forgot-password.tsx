@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { Logo } from "@/components/Logo";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,7 +32,7 @@ function ForgotPasswordPage() {
     });
     setLoading(false);
     if (error) {
-      toast.error("Invio fallito", { description: error.message });
+      toast.error("Invio fallito", { description: authErrorMessage(error) });
       return;
     }
     setSent(true);
