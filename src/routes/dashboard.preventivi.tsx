@@ -394,7 +394,15 @@ function QuoteDetail({
         clientName={clientFull?.referente || clientName}
         clientEmail={clientFull?.email}
         clientPhone={clientFull?.telefono}
-        azienda={company.nome}
+        cliente={
+          clientFull && {
+            ragioneSociale: clientFull.ragioneSociale,
+            referente: clientFull.referente,
+            indirizzo: clientFull.indirizzo,
+            partitaIva: clientFull.partitaIva,
+          }
+        }
+        azienda={company}
         open={invioAperto}
         onOpenChange={setInvioAperto}
       />
