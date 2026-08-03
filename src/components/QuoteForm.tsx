@@ -9,11 +9,11 @@ import {
 import { Plus, Trash2 } from "lucide-react";
 import { useClients } from "@/lib/clients-store";
 import {
-  type Quote, type QuoteItem, type QuoteStatus, calcTotals, formatEuro,
+  type Quote, type QuoteDraft, type QuoteItem, type QuoteStatus, calcTotals, formatEuro,
 } from "@/lib/quotes-store";
 import { AIQuoteGenerator, type AIQuoteResult } from "@/components/AIQuoteGenerator";
 
-type FormData = Omit<Quote, "id" | "numero">;
+type FormData = QuoteDraft;
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const newRow = (): QuoteItem => ({

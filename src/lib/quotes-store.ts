@@ -23,6 +23,10 @@ export interface Quote {
   note: string;
   ivaPercentuale: number;
   stato: QuoteStatus;
+  shareToken: string | null;
+  sentAt: string | null;
+  respondedAt: string | null;
+  respondedBy: string | null;
 }
 
 type Row = {
@@ -36,6 +40,11 @@ type Row = {
   note: string;
   iva_percentuale: number | string;
   stato: QuoteStatus;
+  // Aggiunte dalla migrazione 20260803090000: assenti finché non viene eseguita.
+  share_token?: string | null;
+  sent_at?: string | null;
+  responded_at?: string | null;
+  responded_by?: string | null;
 };
 
 const rowToQuote = (r: Row): Quote => ({
@@ -55,9 +64,13 @@ const rowToQuote = (r: Row): Quote => ({
   note: r.note ?? "",
   ivaPercentuale: typeof r.iva_percentuale === "string" ? parseFloat(r.iva_percentuale) : r.iva_percentuale,
   stato: r.stato,
+  shareToken: r.share_token ?? null,
+  sentAt: r.sent_at ?? null,
+  respondedAt: r.responded_at ?? null,
+  respondedBy: r.responded_by ?? null,
 });
 
-const quoteToRow = (q: Omit<Quote, "id" | "numero">) => ({
+const quoteToRow = (q: QuoteDraft) => ({
   cliente_id: q.clienteId || null,
   data: q.data,
   titolo: q.titolo,
@@ -73,6 +86,9 @@ const quoteToRow = (q: Omit<Quote, "id" | "numero">) => ({
   iva_percentuale: q.ivaPercentuale,
   stato: q.stato,
 });
+
+/** Quello che un form compila: i campi di condivisione li imposta lo store. */
+export type QuoteDraft = Omit<Quote, "id" | "numero" | "shareToken" | "sentAt" | "respondedAt" | "respondedBy">;
 
 let quotes: Quote[] = [];
 let loaded = false;
@@ -134,7 +150,7 @@ function nextNumero(): string {
   return `${year}-${next}`;
 }
 
-export async function addQuote(data: Omit<Quote, "id" | "numero">): Promise<boolean> {
+export async function addQuote(data: QuoteDraft): Promise<boolean> {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) {
     toast.error("Utente non autenticato");
@@ -156,7 +172,7 @@ export async function addQuote(data: Omit<Quote, "id" | "numero">): Promise<bool
   return true;
 }
 
-export async function updateQuote(id: string, data: Omit<Quote, "id" | "numero">): Promise<boolean> {
+export async function updateQuote(id: string, data: QuoteDraft): Promise<boolean> {
   const { data: row, error } = await supabase
     .from("quotes")
     .update(quoteToRow(data))
@@ -188,6 +204,54 @@ export async function setQuoteStatus(id: string, stato: QuoteStatus): Promise<bo
   quotes = quotes.map((q) => (q.id === id ? rowToQuote(row as Row) : q));
   emit();
   return true;
+}
+
+/**
+ * Prepara il link da mandare al cliente. Il token è la sola credenziale del
+ * link, quindi si genera una volta e poi si riusa: rigenerarlo a ogni invio
+ * spegnerebbe i link già mandati.
+ *
+ * Contestualmente il preventivo passa in "inviato": è lo stato che l'endpoint
+ * pubblico richiede per mostrarlo e per accettare una risposta.
+ */
+export async function prepareQuoteLink(id: string): Promise<string | null> {
+  const q = quotes.find((x) => x.id === id);
+  if (!q) return null;
+
+  if (q.shareToken && q.stato !== "bozza") return quoteShareUrl(q.shareToken);
+
+  const token = q.shareToken ?? nuovoToken();
+  const patch: Record<string, unknown> = { share_token: token };
+  if (!q.sentAt) patch.sent_at = new Date().toISOString();
+  if (q.stato === "bozza") patch.stato = "inviato";
+
+  const { data: row, error } = await supabase
+    .from("quotes")
+    .update(patch as never)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error || !row) {
+    console.error("[quotes-store] prepareLink error:", error);
+    toast.error(`Impossibile creare il link: ${authErrorMessage(error, "risposta vuota")}`);
+    return null;
+  }
+  quotes = quotes.map((x) => (x.id === id ? rowToQuote(row as Row) : x));
+  emit();
+  return quoteShareUrl(token);
+}
+
+export function quoteShareUrl(token: string): string {
+  const base = typeof window !== "undefined" ? window.location.origin : "";
+  return `${base}/preventivo/${token}`;
+}
+
+function nuovoToken(): string {
+  // 32 caratteri esadecimali da una sorgente crittografica: non indovinabile.
+  const b = new Uint8Array(16);
+  crypto.getRandomValues(b);
+  return Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
 }
 
 export async function deleteQuote(id: string): Promise<boolean> {
