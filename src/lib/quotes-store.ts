@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -92,7 +93,7 @@ export async function loadQuotes() {
       .order("created_at", { ascending: false });
     if (error) {
       console.error("[quotes-store] load error:", error);
-      toast.error(`Errore caricamento preventivi: ${error.message}`);
+      toast.error(`Errore caricamento preventivi: ${authErrorMessage(error)}`);
       return;
     }
     quotes = (data ?? []).map((r) => rowToQuote(r as Row));
@@ -147,7 +148,7 @@ export async function addQuote(data: Omit<Quote, "id" | "numero">): Promise<bool
     .single();
   if (error || !row) {
     console.error("[quotes-store] add error:", error);
-    toast.error(`Errore salvataggio preventivo: ${error?.message ?? "risposta vuota"}`);
+    toast.error(`Errore salvataggio preventivo: ${authErrorMessage(error, "risposta vuota")}`);
     return false;
   }
   quotes = [rowToQuote(row as Row), ...quotes];
@@ -164,7 +165,7 @@ export async function updateQuote(id: string, data: Omit<Quote, "id" | "numero">
     .single();
   if (error || !row) {
     console.error("[quotes-store] update error:", error);
-    toast.error(`Errore aggiornamento preventivo: ${error?.message ?? "risposta vuota"}`);
+    toast.error(`Errore aggiornamento preventivo: ${authErrorMessage(error, "risposta vuota")}`);
     return false;
   }
   quotes = quotes.map((q) => (q.id === id ? rowToQuote(row as Row) : q));
@@ -181,7 +182,7 @@ export async function setQuoteStatus(id: string, stato: QuoteStatus): Promise<bo
     .single();
   if (error || !row) {
     console.error("[quotes-store] setStatus error:", error);
-    toast.error(`Errore cambio stato: ${error?.message ?? "risposta vuota"}`);
+    toast.error(`Errore cambio stato: ${authErrorMessage(error, "risposta vuota")}`);
     return false;
   }
   quotes = quotes.map((q) => (q.id === id ? rowToQuote(row as Row) : q));
@@ -193,7 +194,7 @@ export async function deleteQuote(id: string): Promise<boolean> {
   const { error } = await supabase.from("quotes").delete().eq("id", id);
   if (error) {
     console.error("[quotes-store] delete error:", error);
-    toast.error(`Errore eliminazione preventivo: ${error.message}`);
+    toast.error(`Errore eliminazione preventivo: ${authErrorMessage(error)}`);
     return false;
   }
   quotes = quotes.filter((q) => q.id !== id);

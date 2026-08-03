@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { type QuoteItem } from "./quotes-store";
@@ -89,7 +90,7 @@ export async function loadFatture() {
       .order("created_at", { ascending: false });
     if (error) {
       console.error("[fatture-store] load error:", error);
-      toast.error(`Errore caricamento fatture: ${error.message}`);
+      toast.error(`Errore caricamento fatture: ${authErrorMessage(error)}`);
       return;
     }
     fatture = (data ?? []).map((r) => rowToFattura(r as unknown as Row));
@@ -140,7 +141,7 @@ export async function addFattura(data: Omit<Fattura, "id" | "numero">): Promise<
     .select()
     .single();
   if (error || !row) {
-    toast.error(`Errore salvataggio fattura: ${error?.message ?? "risposta vuota"}`);
+    toast.error(`Errore salvataggio fattura: ${authErrorMessage(error, "risposta vuota")}`);
     return null;
   }
   const f = rowToFattura(row as unknown as Row);
@@ -157,7 +158,7 @@ export async function updateFattura(id: string, data: Omit<Fattura, "id" | "nume
     .select()
     .single();
   if (error || !row) {
-    toast.error(`Errore aggiornamento fattura: ${error?.message ?? "risposta vuota"}`);
+    toast.error(`Errore aggiornamento fattura: ${authErrorMessage(error, "risposta vuota")}`);
     return false;
   }
   fatture = fatture.map((f) => (f.id === id ? rowToFattura(row as unknown as Row) : f));
@@ -173,7 +174,7 @@ export async function setFatturaStatus(id: string, stato: FatturaStatus): Promis
     .select()
     .single();
   if (error || !row) {
-    toast.error(`Errore cambio stato: ${error?.message ?? "risposta vuota"}`);
+    toast.error(`Errore cambio stato: ${authErrorMessage(error, "risposta vuota")}`);
     return false;
   }
   fatture = fatture.map((f) => (f.id === id ? rowToFattura(row as unknown as Row) : f));
@@ -184,7 +185,7 @@ export async function setFatturaStatus(id: string, stato: FatturaStatus): Promis
 export async function deleteFattura(id: string): Promise<boolean> {
   const { error } = await supabase.from("fatture").delete().eq("id", id);
   if (error) {
-    toast.error(`Errore eliminazione fattura: ${error.message}`);
+    toast.error(`Errore eliminazione fattura: ${authErrorMessage(error)}`);
     return false;
   }
   fatture = fatture.filter((f) => f.id !== id);

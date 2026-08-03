@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,7 +50,7 @@ function SignupPage() {
     });
     setLoading(false);
     if (error) {
-      toast.error("Registrazione fallita", { description: error.message });
+      toast.error("Registrazione fallita", { description: authErrorMessage(error) });
       return;
     }
     // Notifica admin in background — non blocca il flusso anche se fallisce

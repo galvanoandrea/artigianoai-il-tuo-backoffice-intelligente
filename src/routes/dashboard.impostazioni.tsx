@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -508,7 +509,7 @@ function ImpostazioniPage() {
       .eq("id", user.id);
     setSaving(false);
     if (error) {
-      toast.error("Errore nel salvataggio", { description: error.message });
+      toast.error("Errore nel salvataggio", { description: authErrorMessage(error) });
     } else {
       toast.success("Modifiche salvate con successo");
     }

@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -70,7 +71,7 @@ export async function loadAppointments() {
       .order("time_start", { ascending: true });
     if (error) {
       console.error("[agenda-store] load error:", error);
-      toast.error(`Errore caricamento appuntamenti: ${error.message}`);
+      toast.error(`Errore caricamento appuntamenti: ${authErrorMessage(error)}`);
       return;
     }
     appointments = (data ?? []).map((r) => rowToAppointment(r as unknown as Row));
@@ -118,7 +119,7 @@ export async function addAppointment(data: Omit<Appointment, "id" | "userId">): 
     .single();
   if (error || !row) {
     console.error("[agenda-store] add error:", error);
-    toast.error(`Errore salvataggio appuntamento: ${error?.message ?? "risposta vuota"}`);
+    toast.error(`Errore salvataggio appuntamento: ${authErrorMessage(error, "risposta vuota")}`);
     return false;
   }
   appointments = [...appointments, rowToAppointment(row as unknown as Row)].sort((a, b) => {
@@ -139,7 +140,7 @@ export async function updateAppointment(id: string, data: Omit<Appointment, "id"
     .single();
   if (error || !row) {
     console.error("[agenda-store] update error:", error);
-    toast.error(`Errore aggiornamento appuntamento: ${error?.message ?? "risposta vuota"}`);
+    toast.error(`Errore aggiornamento appuntamento: ${authErrorMessage(error, "risposta vuota")}`);
     return false;
   }
   appointments = appointments
@@ -156,7 +157,7 @@ export async function deleteAppointment(id: string): Promise<boolean> {
   const { error } = await supabase.from("appointments").delete().eq("id", id);
   if (error) {
     console.error("[agenda-store] delete error:", error);
-    toast.error(`Errore eliminazione appuntamento: ${error.message}`);
+    toast.error(`Errore eliminazione appuntamento: ${authErrorMessage(error)}`);
     return false;
   }
   appointments = appointments.filter((a) => a.id !== id);
