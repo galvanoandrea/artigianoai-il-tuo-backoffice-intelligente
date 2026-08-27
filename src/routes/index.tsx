@@ -1,7 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Logo } from "@/components/Logo";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,18 +15,9 @@ import {
   Package,
   BarChart3,
   Printer,
-  Check,
-  Crown,
   Wrench,
 } from "lucide-react";
-import {
-  TRIAL_DAYS,
-  PRICE_MONTH,
-  PRICE_YEAR,
-  REGULAR_PRICE_MONTH,
-  REGULAR_PRICE_YEAR,
-  FOUNDING_SLOTS_TOTAL,
-} from "@/lib/pricing";
+import { TRIAL_DAYS } from "@/lib/pricing";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -110,28 +99,7 @@ const steps = [
   },
 ];
 
-const includedInPlan = [
-  "AI illimitata per i preventivi",
-  "Clienti, fornitori e agenda",
-  "Fatture con numerazione automatica",
-  "PDF e stampa con la tua intestazione",
-  "Dati al sicuro sul cloud",
-];
-
-function useFoundingSlots() {
-  const [slotsLeft, setSlotsLeft] = useState<number | null>(null);
-  useEffect(() => {
-    supabase.rpc("founding_slots_remaining").then(({ data, error }) => {
-      if (!error && typeof data === "number") setSlotsLeft(data);
-    });
-  }, []);
-  return slotsLeft;
-}
-
 function Index() {
-  const foundingSlotsLeft = useFoundingSlots();
-  const foundingAvailable = foundingSlotsLeft !== null && foundingSlotsLeft > 0;
-
   return (
     <div className="min-h-screen bg-background">
       {/* ── HEADER ── */}
@@ -147,9 +115,6 @@ function Index() {
             </a>
             <a href="#come-funziona" className="hover:text-foreground transition-colors">
               Come funziona
-            </a>
-            <a href="#prezzi" className="hover:text-foreground transition-colors">
-              Prezzi
             </a>
           </nav>
           <div className="flex items-center gap-2">
@@ -210,10 +175,6 @@ function Index() {
                 <Link to="/login">Accedi</Link>
               </Button>
             </div>
-            <p className="text-white/60 text-sm mt-4">
-              Dopo la prova: €{REGULAR_PRICE_MONTH}/mese o €{REGULAR_PRICE_YEAR}/anno — o €
-              {PRICE_MONTH}/mese a vita se sei tra i primi {FOUNDING_SLOTS_TOTAL} iscritti.
-            </p>
           </div>
         </div>
       </section>
@@ -289,99 +250,6 @@ function Index() {
                 <p className="text-muted-foreground text-sm leading-relaxed">{s.text}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── PRICING ── */}
-      <section id="prezzi" className="container mx-auto px-4 py-20">
-        <div className="text-center max-w-2xl mx-auto mb-6">
-          <Badge variant="outline" className="mb-4 text-xs uppercase tracking-wide">
-            Prezzi
-          </Badge>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Un piano solo, tutto incluso
-          </h2>
-          <p className="text-muted-foreground text-lg">
-            Prova gratis per {TRIAL_DAYS} giorni. Nessun tetto sulle generazioni AI, nessuna
-            sorpresa in fattura.
-          </p>
-        </div>
-
-        {foundingAvailable && (
-          <div className="max-w-2xl mx-auto mb-10 flex items-center gap-3 rounded-2xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 px-5 py-4">
-            <div className="w-9 h-9 rounded-full bg-amber-400/20 grid place-items-center shrink-0">
-              <Crown className="w-4 h-4 text-amber-600" />
-            </div>
-            <p className="text-sm text-amber-800 dark:text-amber-300">
-              <strong>Offerta Founding Member</strong> — i primi {FOUNDING_SLOTS_TOTAL} che si
-              abbonano bloccano il prezzo a <strong>€{PRICE_MONTH}/mese a vita</strong> (o €
-              {PRICE_YEAR}/anno), anche quando il prezzo standard sale. Solo{" "}
-              <strong>{foundingSlotsLeft}</strong>{" "}
-              {foundingSlotsLeft === 1 ? "posto rimasto" : "posti rimasti"} su{" "}
-              {FOUNDING_SLOTS_TOTAL}.
-            </p>
-          </div>
-        )}
-
-        <div className="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
-          {/* Mensile */}
-          <div className="relative p-8 rounded-3xl border border-border bg-card flex flex-col">
-            <h3 className="font-semibold text-foreground mb-1">Mensile</h3>
-            <p className="text-muted-foreground text-sm mb-6">Flessibile, disdici quando vuoi.</p>
-            <div className="mb-6">
-              <span className="text-4xl font-bold text-foreground">€{REGULAR_PRICE_MONTH}</span>
-              <span className="text-muted-foreground">/mese</span>
-              {foundingAvailable && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
-                  €{PRICE_MONTH}/mese se sei tra i primi {FOUNDING_SLOTS_TOTAL}
-                </p>
-              )}
-            </div>
-            <ul className="space-y-3 mb-8 flex-1">
-              {includedInPlan.map((item) => (
-                <li key={item} className="flex items-start gap-2.5 text-sm text-foreground">
-                  <Check className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <Button asChild size="lg" variant="outline" className="w-full">
-              <Link to="/signup">Prova gratis {TRIAL_DAYS} giorni</Link>
-            </Button>
-          </div>
-
-          {/* Annuale */}
-          <div className="relative p-8 rounded-3xl border-2 border-accent bg-card flex flex-col shadow-elegant">
-            <Badge className="absolute -top-3 left-8 bg-gradient-accent text-accent-foreground shadow-glow">
-              2 mesi gratis
-            </Badge>
-            <h3 className="font-semibold text-foreground mb-1">Annuale</h3>
-            <p className="text-muted-foreground text-sm mb-6">Il prezzo più conveniente.</p>
-            <div className="mb-6">
-              <span className="text-4xl font-bold text-foreground">€{REGULAR_PRICE_YEAR}</span>
-              <span className="text-muted-foreground">/anno</span>
-              {foundingAvailable && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
-                  €{PRICE_YEAR}/anno se sei tra i primi {FOUNDING_SLOTS_TOTAL}
-                </p>
-              )}
-            </div>
-            <ul className="space-y-3 mb-8 flex-1">
-              {includedInPlan.map((item) => (
-                <li key={item} className="flex items-start gap-2.5 text-sm text-foreground">
-                  <Check className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <Button
-              asChild
-              size="lg"
-              className="w-full bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow"
-            >
-              <Link to="/signup">Prova gratis {TRIAL_DAYS} giorni</Link>
-            </Button>
           </div>
         </div>
       </section>

@@ -164,11 +164,11 @@ function TrialExpiredPaywall() {
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <p className="text-sm text-muted-foreground">
-            Il periodo di prova gratuito è terminato. Abbonati per continuare a usare ArtigianoAI —
-            clienti, preventivi, fatture e tutto il resto.
+            Il periodo di prova gratuito è terminato. Contattaci per attivare l'abbonamento e
+            continuare a usare ArtigianoAI — clienti, preventivi, fatture e tutto il resto.
           </p>
           <Button asChild className="gap-2">
-            <Link to="/dashboard/impostazioni">Abbonati ora</Link>
+            <Link to="/dashboard/impostazioni">Vai alle impostazioni</Link>
           </Button>
         </CardContent>
       </Card>
