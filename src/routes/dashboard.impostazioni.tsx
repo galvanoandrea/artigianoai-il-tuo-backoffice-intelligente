@@ -8,20 +8,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Save, CalendarClock, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
-import { TRIAL_DAYS, SUBSCRIPTION_DAYS } from "@/lib/pricing";
+import { Save, CalendarClock, CheckCircle2, AlertTriangle, Clock, Crown } from "lucide-react";
+import { TRIAL_DAYS, PRICE_MONTH, PRICE_YEAR, REGULAR_PRICE_MONTH, REGULAR_PRICE_YEAR } from "@/lib/pricing";
+
+type Interval = "month" | "year";
+
+function formatPrice(founding: boolean, interval: Interval): string {
+  const amount = interval === "year" ? PRICE_YEAR : PRICE_MONTH;
+  const unit = interval === "year" ? "anno" : "mese";
+  return `€${amount}/${unit}${founding ? " a vita" : ""}`;
+}
 
 export const Route = createFileRoute("/dashboard/impostazioni")({
   component: ImpostazioniPage,
 });
 
-type CountdownStatus =
+type TrialStatus =
   | { state: "pending" }
   | { state: "active"; daysLeft: number; expiresAt: Date }
   | { state: "expiring_soon"; daysLeft: number; expiresAt: Date }
   | { state: "expired"; expiredDaysAgo: number };
 
-function computeTrialStatus(approvedAt: string | null | undefined): CountdownStatus {
+function computeTrialStatus(approvedAt: string | null | undefined): TrialStatus {
   if (!approvedAt) return { state: "pending" };
   const start = new Date(approvedAt);
   const expiresAt = new Date(start.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
@@ -33,111 +41,204 @@ function computeTrialStatus(approvedAt: string | null | undefined): CountdownSta
   return { state: "expired", expiredDaysAgo: Math.abs(daysLeft) };
 }
 
-function computeSubscriptionStatus(
-  startedAt: string | null | undefined,
-): Exclude<CountdownStatus, { state: "pending" }> {
-  const start = startedAt ? new Date(startedAt) : new Date();
-  const expiresAt = new Date(start.getTime() + SUBSCRIPTION_DAYS * 24 * 60 * 60 * 1000);
-  const now = new Date();
-  const msLeft = expiresAt.getTime() - now.getTime();
-  const daysLeft = Math.ceil(msLeft / (24 * 60 * 60 * 1000));
-  if (daysLeft > 30) return { state: "active", daysLeft, expiresAt };
-  if (daysLeft > 0) return { state: "expiring_soon", daysLeft, expiresAt };
-  return { state: "expired", expiredDaysAgo: Math.abs(daysLeft) };
+async function getAuthHeader(): Promise<string | null> {
+  const { supabase } = await import("@/integrations/supabase/client");
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return session?.access_token ? `Bearer ${session.access_token}` : null;
 }
 
-const formatDate = (d: Date) =>
-  d.toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" });
+async function redirectToStripe(endpoint: string, body?: Record<string, unknown>): Promise<void> {
+  const auth = await getAuthHeader();
+  if (!auth) return;
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { Authorization: auth, "Content-Type": "application/json" },
+    body: JSON.stringify(body ?? {}),
+  });
+  const data = await res.json();
+  if (data.url) window.location.href = data.url;
+}
+
+function IntervalToggle({
+  interval,
+  onChange,
+}: {
+  interval: Interval;
+  onChange: (i: Interval) => void;
+}) {
+  return (
+    <div className="inline-flex rounded-lg border p-0.5 bg-muted/50">
+      <button
+        type="button"
+        onClick={() => onChange("month")}
+        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+          interval === "month" ? "bg-background shadow-sm" : "text-muted-foreground"
+        }`}
+      >
+        Mensile · €{PRICE_MONTH}/mese
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("year")}
+        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+          interval === "year" ? "bg-background shadow-sm" : "text-muted-foreground"
+        }`}
+      >
+        Annuale · €{PRICE_YEAR}/anno
+      </button>
+    </div>
+  );
+}
+
+function FoundingBanner({ slotsLeft }: { slotsLeft: number | null }) {
+  if (slotsLeft === null || slotsLeft <= 0) return null;
+  return (
+    <div className="flex items-center gap-2 text-xs bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2">
+      <Crown className="w-3.5 h-3.5 shrink-0" />
+      <span>
+        Offerta Founding Member: blocca <strong>€{PRICE_MONTH}/mese a vita</strong> — solo{" "}
+        <strong>{slotsLeft}</strong> {slotsLeft === 1 ? "posto rimasto" : "posti rimasti"} su 5.
+        Dopo, il prezzo standard sarà <strong>€{REGULAR_PRICE_MONTH}/mese</strong> (o{" "}
+        <strong>€{REGULAR_PRICE_YEAR}/anno</strong>).
+      </span>
+    </div>
+  );
+}
 
 function TrialCard({
   approvedAt,
   subscriptionStatus,
-  subscriptionStartedAt,
+  isFoundingMember,
+  billingInterval,
+  foundingSlotsLeft,
 }: {
   approvedAt: string | null | undefined;
   subscriptionStatus: string | null | undefined;
-  subscriptionStartedAt: string | null | undefined;
+  isFoundingMember: boolean;
+  billingInterval: Interval | null | undefined;
+  foundingSlotsLeft: number | null;
 }) {
-  // L'abbonamento annuale viene attivato manualmente dall'amministratore dopo il pagamento.
+  const [redirecting, setRedirecting] = useState(false);
+  const [interval, setInterval] = useState<Interval>("month");
+
+  const handleSubscribe = async () => {
+    setRedirecting(true);
+    await redirectToStripe("/api/create-checkout", { interval });
+    setRedirecting(false);
+  };
+
+  const handlePortal = async () => {
+    setRedirecting(true);
+    await redirectToStripe("/api/customer-portal");
+    setRedirecting(false);
+  };
+
+  // If already subscribed via Stripe, show subscription state
   if (subscriptionStatus === "active") {
-    const sub = computeSubscriptionStatus(subscriptionStartedAt);
-
-    if (sub.state === "expired") {
-      return (
-        <Card className="border-destructive/40">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <CalendarClock className="w-4 h-4 text-destructive" /> Abbonamento
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
-            <div>
-              <p className="font-semibold text-destructive">
-                Abbonamento scaduto{" "}
-                {sub.expiredDaysAgo > 0 ? `${sub.expiredDaysAgo} giorni fa` : "oggi"}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Contattaci per rinnovare e continuare ad usare la piattaforma.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    const expiringSoon = sub.state === "expiring_soon";
     return (
-      <Card
-        className={
-          expiringSoon
-            ? "border-amber-300 dark:border-amber-700"
-            : "border-emerald-200 dark:border-emerald-800"
-        }
-      >
+      <Card className="border-emerald-200 dark:border-emerald-800">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <CalendarClock
-              className={`w-4 h-4 ${expiringSoon ? "text-amber-600" : "text-emerald-600"}`}
-            />{" "}
-            Abbonamento
+            <CalendarClock className="w-4 h-4 text-emerald-600" /> Abbonamento
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
-            {expiringSoon ? (
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
-            ) : (
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-            )}
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <div>
-              <p
-                className={`font-semibold ${expiringSoon ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400"}`}
-              >
-                Abbonamento attivo — {sub.daysLeft} giorni rimanenti
+              <p className="font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                {isFoundingMember && <Crown className="w-4 h-4 text-amber-500" />}
+                Abbonamento attivo{isFoundingMember ? " · Founding Member" : ""}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Scade il {formatDate(sub.expiresAt)}
+                {formatPrice(isFoundingMember, billingInterval ?? "month")} · rinnovo automatico
               </p>
             </div>
           </div>
-          <div className="h-2 rounded-full bg-muted overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${expiringSoon ? "bg-amber-400" : "bg-emerald-500"}`}
-              style={{ width: `${Math.round((sub.daysLeft / SUBSCRIPTION_DAYS) * 100)}%` }}
-            />
+          <Button variant="outline" size="sm" disabled={redirecting} onClick={handlePortal}>
+            {redirecting ? "Caricamento…" : "Gestisci abbonamento"}
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (subscriptionStatus === "past_due") {
+    return (
+      <Card className="border-amber-300 dark:border-amber-700">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CalendarClock className="w-4 h-4 text-amber-600" /> Abbonamento
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+            <div>
+              <p className="font-semibold text-amber-700 dark:text-amber-400">
+                Pagamento non riuscito
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Aggiorna il metodo di pagamento per continuare.
+              </p>
+            </div>
           </div>
-          {expiringSoon && (
-            <p className="text-xs text-muted-foreground">
-              Contattaci per rinnovare prima della scadenza.
-            </p>
-          )}
+          <Button
+            size="sm"
+            disabled={redirecting}
+            onClick={handlePortal}
+            className="bg-amber-500 hover:bg-amber-600 text-white"
+          >
+            {redirecting ? "Caricamento…" : "Aggiorna pagamento"}
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (subscriptionStatus === "canceled") {
+    return (
+      <Card className="border-destructive/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CalendarClock className="w-4 h-4 text-destructive" /> Abbonamento
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+            <div>
+              <p className="font-semibold text-destructive">Abbonamento annullato</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Riattiva per continuare ad usare la piattaforma.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+        <CardContent className="pt-0 space-y-3">
+          <FoundingBanner slotsLeft={foundingSlotsLeft} />
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <IntervalToggle interval={interval} onChange={setInterval} />
+            <Button
+              size="sm"
+              disabled={redirecting}
+              onClick={handleSubscribe}
+              className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow"
+            >
+              {redirecting ? "Caricamento…" : "Riattiva abbonamento"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
   }
 
   const status = computeTrialStatus(approvedAt);
+
+  const formatDate = (d: Date) =>
+    d.toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" });
 
   if (status.state === "pending") {
     return (
@@ -186,6 +287,24 @@ function TrialCard({
               style={{ width: `${Math.round((status.daysLeft / TRIAL_DAYS) * 100)}%` }}
             />
           </div>
+          <p className="text-xs text-muted-foreground">
+            Alla scadenza del periodo di prova gratuito, l'abbonamento è di{" "}
+            <strong>€{PRICE_MONTH}/mese</strong> (oppure <strong>€{PRICE_YEAR}/anno</strong>, 2 mesi
+            gratis). Puoi abbonarti fin da subito, senza aspettare la scadenza.
+          </p>
+          <FoundingBanner slotsLeft={foundingSlotsLeft} />
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <IntervalToggle interval={interval} onChange={setInterval} />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={redirecting}
+              onClick={handleSubscribe}
+              className="shrink-0"
+            >
+              {redirecting ? "Caricamento…" : "Abbonati ora"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -200,16 +319,18 @@ function TrialCard({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
-            <div>
-              <p className="font-semibold text-amber-700 dark:text-amber-400">
-                Periodo di prova in scadenza — {status.daysLeft}{" "}
-                {status.daysLeft === 1 ? "giorno" : "giorni"} rimanenti
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Scade il {formatDate(status.expiresAt)}
-              </p>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+              <div>
+                <p className="font-semibold text-amber-700 dark:text-amber-400">
+                  Periodo di prova in scadenza — {status.daysLeft}{" "}
+                  {status.daysLeft === 1 ? "giorno" : "giorni"} rimanenti
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Scade il {formatDate(status.expiresAt)}
+                </p>
+              </div>
             </div>
           </div>
           <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -217,6 +338,18 @@ function TrialCard({
               className="h-full rounded-full bg-amber-400 transition-all"
               style={{ width: `${Math.round((status.daysLeft / TRIAL_DAYS) * 100)}%` }}
             />
+          </div>
+          <FoundingBanner slotsLeft={foundingSlotsLeft} />
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <IntervalToggle interval={interval} onChange={setInterval} />
+            <Button
+              size="sm"
+              disabled={redirecting}
+              onClick={handleSubscribe}
+              className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow shrink-0"
+            >
+              {redirecting ? "Caricamento…" : "Abbonati ora"}
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -240,9 +373,21 @@ function TrialCard({
               {status.expiredDaysAgo > 0 ? `${status.expiredDaysAgo} giorni fa` : "oggi"}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Contattaci per attivare l'abbonamento e continuare ad usare la piattaforma.
+              Attiva l'abbonamento per continuare.
             </p>
           </div>
+        </div>
+        <FoundingBanner slotsLeft={foundingSlotsLeft} />
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <IntervalToggle interval={interval} onChange={setInterval} />
+          <Button
+            size="sm"
+            disabled={redirecting}
+            onClick={handleSubscribe}
+            className="bg-gradient-accent text-accent-foreground hover:opacity-90 shadow-glow shrink-0"
+          >
+            {redirecting ? "Caricamento…" : "Abbonati ora"}
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -270,9 +415,9 @@ function ImpostazioniPage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null | undefined>(
     undefined,
   );
-  const [subscriptionStartedAt, setSubscriptionStartedAt] = useState<string | null | undefined>(
-    undefined,
-  );
+  const [isFoundingMember, setIsFoundingMember] = useState(false);
+  const [billingInterval, setBillingInterval] = useState<Interval | null | undefined>(undefined);
+  const [foundingSlotsLeft, setFoundingSlotsLeft] = useState<number | null>(null);
   const [form, setForm] = useState<ProfileForm>({
     nome: "",
     cognome: "",
@@ -300,7 +445,8 @@ function ImpostazioniPage() {
       } else if (data) {
         setApprovedAt((data as any).approved_at ?? null);
         setSubscriptionStatus((data as any).subscription_status ?? null);
-        setSubscriptionStartedAt((data as any).subscription_started_at ?? null);
+        setIsFoundingMember((data as any).is_founding_member === true);
+        setBillingInterval(((data as any).billing_interval as Interval) ?? null);
         let nome = (data as any).nome ?? "";
         let cognome = (data as any).cognome ?? "";
         if (!nome && !cognome && (data as any).nome_completo) {
@@ -323,6 +469,13 @@ function ImpostazioniPage() {
       }
       setLoading(false);
     })();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.rpc("founding_slots_remaining").then(({ data, error }) => {
+      if (!error && typeof data === "number") setFoundingSlotsLeft(data);
+    });
   }, [user]);
 
   const update = (k: keyof ProfileForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -374,7 +527,9 @@ function ImpostazioniPage() {
       <TrialCard
         approvedAt={approvedAt}
         subscriptionStatus={subscriptionStatus}
-        subscriptionStartedAt={subscriptionStartedAt}
+        isFoundingMember={isFoundingMember}
+        billingInterval={billingInterval}
+        foundingSlotsLeft={foundingSlotsLeft}
       />
 
       <Card>

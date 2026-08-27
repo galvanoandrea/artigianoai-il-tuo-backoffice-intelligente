@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SubscribeSuccessRouteImport } from './routes/subscribe-success'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PendingApprovalRouteImport } from './routes/pending-approval'
@@ -26,6 +27,11 @@ import { Route as DashboardClientiRouteImport } from './routes/dashboard.clienti
 import { Route as DashboardAgendaRouteImport } from './routes/dashboard.agenda'
 import { Route as DashboardAdminRouteImport } from './routes/dashboard.admin'
 
+const SubscribeSuccessRoute = SubscribeSuccessRouteImport.update({
+  id: '/subscribe-success',
+  path: '/subscribe-success',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/pending-approval': typeof PendingApprovalRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/subscribe-success': typeof SubscribeSuccessRoute
   '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/agenda': typeof DashboardAgendaRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
@@ -133,6 +140,7 @@ export interface FileRoutesByTo {
   '/pending-approval': typeof PendingApprovalRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/subscribe-success': typeof SubscribeSuccessRoute
   '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/agenda': typeof DashboardAgendaRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
@@ -152,6 +160,7 @@ export interface FileRoutesById {
   '/pending-approval': typeof PendingApprovalRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/subscribe-success': typeof SubscribeSuccessRoute
   '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/agenda': typeof DashboardAgendaRoute
   '/dashboard/clienti': typeof DashboardClientiRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/pending-approval'
     | '/reset-password'
     | '/signup'
+    | '/subscribe-success'
     | '/dashboard/admin'
     | '/dashboard/agenda'
     | '/dashboard/clienti'
@@ -189,6 +199,7 @@ export interface FileRouteTypes {
     | '/pending-approval'
     | '/reset-password'
     | '/signup'
+    | '/subscribe-success'
     | '/dashboard/admin'
     | '/dashboard/agenda'
     | '/dashboard/clienti'
@@ -207,6 +218,7 @@ export interface FileRouteTypes {
     | '/pending-approval'
     | '/reset-password'
     | '/signup'
+    | '/subscribe-success'
     | '/dashboard/admin'
     | '/dashboard/agenda'
     | '/dashboard/clienti'
@@ -226,10 +238,18 @@ export interface RootRouteChildren {
   PendingApprovalRoute: typeof PendingApprovalRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  SubscribeSuccessRoute: typeof SubscribeSuccessRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/subscribe-success': {
+      id: '/subscribe-success'
+      path: '/subscribe-success'
+      fullPath: '/subscribe-success'
+      preLoaderRoute: typeof SubscribeSuccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
@@ -380,6 +400,7 @@ const rootRouteChildren: RootRouteChildren = {
   PendingApprovalRoute: PendingApprovalRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  SubscribeSuccessRoute: SubscribeSuccessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
