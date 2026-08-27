@@ -9,19 +9,19 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Save, CalendarClock, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
-import { TRIAL_DAYS } from "@/lib/pricing";
+import { TRIAL_DAYS, SUBSCRIPTION_DAYS } from "@/lib/pricing";
 
 export const Route = createFileRoute("/dashboard/impostazioni")({
   component: ImpostazioniPage,
 });
 
-type TrialStatus =
+type CountdownStatus =
   | { state: "pending" }
   | { state: "active"; daysLeft: number; expiresAt: Date }
   | { state: "expiring_soon"; daysLeft: number; expiresAt: Date }
   | { state: "expired"; expiredDaysAgo: number };
 
-function computeTrialStatus(approvedAt: string | null | undefined): TrialStatus {
+function computeTrialStatus(approvedAt: string | null | undefined): CountdownStatus {
   if (!approvedAt) return { state: "pending" };
   const start = new Date(approvedAt);
   const expiresAt = new Date(start.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
@@ -33,34 +33,111 @@ function computeTrialStatus(approvedAt: string | null | undefined): TrialStatus 
   return { state: "expired", expiredDaysAgo: Math.abs(daysLeft) };
 }
 
+function computeSubscriptionStatus(
+  startedAt: string | null | undefined,
+): Exclude<CountdownStatus, { state: "pending" }> {
+  const start = startedAt ? new Date(startedAt) : new Date();
+  const expiresAt = new Date(start.getTime() + SUBSCRIPTION_DAYS * 24 * 60 * 60 * 1000);
+  const now = new Date();
+  const msLeft = expiresAt.getTime() - now.getTime();
+  const daysLeft = Math.ceil(msLeft / (24 * 60 * 60 * 1000));
+  if (daysLeft > 30) return { state: "active", daysLeft, expiresAt };
+  if (daysLeft > 0) return { state: "expiring_soon", daysLeft, expiresAt };
+  return { state: "expired", expiredDaysAgo: Math.abs(daysLeft) };
+}
+
+const formatDate = (d: Date) =>
+  d.toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" });
+
 function TrialCard({
   approvedAt,
   subscriptionStatus,
+  subscriptionStartedAt,
 }: {
   approvedAt: string | null | undefined;
   subscriptionStatus: string | null | undefined;
+  subscriptionStartedAt: string | null | undefined;
 }) {
   // L'abbonamento annuale viene attivato manualmente dall'amministratore dopo il pagamento.
   if (subscriptionStatus === "active") {
+    const sub = computeSubscriptionStatus(subscriptionStartedAt);
+
+    if (sub.state === "expired") {
+      return (
+        <Card className="border-destructive/40">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CalendarClock className="w-4 h-4 text-destructive" /> Abbonamento
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+            <div>
+              <p className="font-semibold text-destructive">
+                Abbonamento scaduto{" "}
+                {sub.expiredDaysAgo > 0 ? `${sub.expiredDaysAgo} giorni fa` : "oggi"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Contattaci per rinnovare e continuare ad usare la piattaforma.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    const expiringSoon = sub.state === "expiring_soon";
     return (
-      <Card className="border-emerald-200 dark:border-emerald-800">
+      <Card
+        className={
+          expiringSoon
+            ? "border-amber-300 dark:border-amber-700"
+            : "border-emerald-200 dark:border-emerald-800"
+        }
+      >
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <CalendarClock className="w-4 h-4 text-emerald-600" /> Abbonamento
+            <CalendarClock
+              className={`w-4 h-4 ${expiringSoon ? "text-amber-600" : "text-emerald-600"}`}
+            />{" "}
+            Abbonamento
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center gap-3">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-          <p className="font-semibold text-emerald-700 dark:text-emerald-400">Abbonamento attivo</p>
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-3">
+            {expiringSoon ? (
+              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            )}
+            <div>
+              <p
+                className={`font-semibold ${expiringSoon ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400"}`}
+              >
+                Abbonamento attivo — {sub.daysLeft} giorni rimanenti
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Scade il {formatDate(sub.expiresAt)}
+              </p>
+            </div>
+          </div>
+          <div className="h-2 rounded-full bg-muted overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${expiringSoon ? "bg-amber-400" : "bg-emerald-500"}`}
+              style={{ width: `${Math.round((sub.daysLeft / SUBSCRIPTION_DAYS) * 100)}%` }}
+            />
+          </div>
+          {expiringSoon && (
+            <p className="text-xs text-muted-foreground">
+              Contattaci per rinnovare prima della scadenza.
+            </p>
+          )}
         </CardContent>
       </Card>
     );
   }
 
   const status = computeTrialStatus(approvedAt);
-
-  const formatDate = (d: Date) =>
-    d.toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" });
 
   if (status.state === "pending") {
     return (
@@ -193,6 +270,9 @@ function ImpostazioniPage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null | undefined>(
     undefined,
   );
+  const [subscriptionStartedAt, setSubscriptionStartedAt] = useState<string | null | undefined>(
+    undefined,
+  );
   const [form, setForm] = useState<ProfileForm>({
     nome: "",
     cognome: "",
@@ -220,6 +300,7 @@ function ImpostazioniPage() {
       } else if (data) {
         setApprovedAt((data as any).approved_at ?? null);
         setSubscriptionStatus((data as any).subscription_status ?? null);
+        setSubscriptionStartedAt((data as any).subscription_started_at ?? null);
         let nome = (data as any).nome ?? "";
         let cognome = (data as any).cognome ?? "";
         if (!nome && !cognome && (data as any).nome_completo) {
@@ -290,7 +371,11 @@ function ImpostazioniPage() {
         </p>
       </div>
 
-      <TrialCard approvedAt={approvedAt} subscriptionStatus={subscriptionStatus} />
+      <TrialCard
+        approvedAt={approvedAt}
+        subscriptionStatus={subscriptionStatus}
+        subscriptionStartedAt={subscriptionStartedAt}
+      />
 
       <Card>
         <CardHeader>

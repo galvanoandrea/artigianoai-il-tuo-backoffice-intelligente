@@ -2,10 +2,26 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import {
-  ShieldCheck, Mail, Users, Ban, CheckCircle2, RefreshCw,
-  UserCheck, UserX, Clock, BarChart2, X, Building2,
-  FileText, Receipt, Wallet, TrendingUp,
+  ShieldCheck,
+  Mail,
+  Users,
+  Ban,
+  CheckCircle2,
+  RefreshCw,
+  UserCheck,
+  UserX,
+  Clock,
+  BarChart2,
+  X,
+  Building2,
+  FileText,
+  Receipt,
+  Wallet,
+  TrendingUp,
+  CalendarClock,
+  CalendarOff,
 } from "lucide-react";
+import { SUBSCRIPTION_DAYS } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,12 +29,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -34,7 +54,15 @@ type UserEntry = {
   last_sign_in_at: string | null;
   banned: boolean;
   approved: boolean;
+  subscription_status: string | null;
+  subscription_started_at: string | null;
 };
+
+function subscriptionDaysLeft(startedAt: string | null): number | null {
+  if (!startedAt) return null;
+  const expiresAt = new Date(startedAt).getTime() + SUBSCRIPTION_DAYS * 24 * 60 * 60 * 1000;
+  return Math.ceil((expiresAt - Date.now()) / (24 * 60 * 60 * 1000));
+}
 
 type UserStats = {
   profile: {
@@ -58,10 +86,16 @@ type UserStats = {
 };
 
 const euro = (n: number) =>
-  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
+  new Intl.NumberFormat("it-IT", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(n);
 
 async function getAuthHeader(): Promise<string | null> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   return session?.access_token ? `Bearer ${session.access_token}` : null;
 }
 
@@ -95,7 +129,16 @@ function AdminPage() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [email, setEmail] = useState("");
   const [inviting, setInviting] = useState(false);
-  const [confirmTarget, setConfirmTarget] = useState<{ user: UserEntry; action: "ban" | "unban" | "approve" | "reject" } | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<{
+    user: UserEntry;
+    action:
+      | "ban"
+      | "unban"
+      | "approve"
+      | "reject"
+      | "activate_subscription"
+      | "deactivate_subscription";
+  } | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
   const [statsUser, setStatsUser] = useState<UserEntry | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -156,7 +199,9 @@ function AdminPage() {
         setTimeout(loadUsers, 1500);
       }
     } catch (err: unknown) {
-      toast.error("Errore", { description: err instanceof Error ? err.message : "Errore sconosciuto" });
+      toast.error("Errore", {
+        description: err instanceof Error ? err.message : "Errore sconosciuto",
+      });
     } finally {
       setInviting(false);
     }
@@ -173,17 +218,32 @@ function AdminPage() {
         toast.error("Operazione fallita", { description: res.error });
       } else {
         const msg =
-          action === "ban" ? `${user.email} bloccato` :
-          action === "unban" ? `${user.email} sbloccato` :
-          action === "approve" ? `${user.email} approvato` :
-          `${user.email} rifiutato`;
+          action === "ban"
+            ? `${user.email} bloccato`
+            : action === "unban"
+              ? `${user.email} sbloccato`
+              : action === "approve"
+                ? `${user.email} approvato`
+                : action === "activate_subscription"
+                  ? `Abbonamento attivato per ${user.email}`
+                  : action === "deactivate_subscription"
+                    ? `Abbonamento disattivato per ${user.email}`
+                    : `${user.email} rifiutato`;
         toast.success(msg);
-        setUsers((prev) => prev.map((u) => {
-          if (u.id !== user.id) return u;
-          if (action === "ban" || action === "unban") return { ...u, banned: action === "ban" };
-          if (action === "approve" || action === "reject") return { ...u, approved: action === "approve" };
-          return u;
-        }));
+        const nowIso = new Date().toISOString();
+        setUsers((prev) =>
+          prev.map((u) => {
+            if (u.id !== user.id) return u;
+            if (action === "ban" || action === "unban") return { ...u, banned: action === "ban" };
+            if (action === "approve" || action === "reject")
+              return { ...u, approved: action === "approve" };
+            if (action === "activate_subscription")
+              return { ...u, subscription_status: "active", subscription_started_at: nowIso };
+            if (action === "deactivate_subscription")
+              return { ...u, subscription_status: null, subscription_started_at: null };
+            return u;
+          }),
+        );
       }
     } catch {
       toast.error("Errore di rete");
@@ -197,7 +257,11 @@ function AdminPage() {
 
   const formatDate = (iso: string | null) => {
     if (!iso) return "—";
-    return new Date(iso).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" });
+    return new Date(iso).toLocaleDateString("it-IT", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
   };
 
   return (
@@ -208,16 +272,21 @@ function AdminPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold">Admin</h1>
-          <p className="text-sm text-muted-foreground">Gestisci utenti e accessi alla piattaforma.</p>
+          <p className="text-sm text-muted-foreground">
+            Gestisci utenti e accessi alla piattaforma.
+          </p>
         </div>
       </div>
 
       {/* Invite card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Mail className="w-4 h-4" /> Invita un nuovo utente</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="w-4 h-4" /> Invita un nuovo utente
+          </CardTitle>
           <CardDescription>
-            Inserisci l'email. L'utente riceverà un link per impostare la propria password e accedere.
+            Inserisci l'email. L'utente riceverà un link per impostare la propria password e
+            accedere.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -249,19 +318,29 @@ function AdminPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
-            <CardTitle className="flex items-center gap-2"><Users className="w-4 h-4" /> Utenti registrati</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-4 h-4" /> Utenti registrati
+            </CardTitle>
             <CardDescription className="mt-1">
               Gli utenti <strong>In attesa</strong> hanno bisogno di approvazione prima di accedere.
             </CardDescription>
           </div>
-          <Button variant="ghost" size="icon" onClick={loadUsers} disabled={loadingUsers} title="Aggiorna lista">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={loadUsers}
+            disabled={loadingUsers}
+            title="Aggiorna lista"
+          >
             <RefreshCw className={`h-4 w-4 ${loadingUsers ? "animate-spin" : ""}`} />
           </Button>
         </CardHeader>
         <CardContent className="p-0">
           {loadingUsers && users.length === 0 ? (
             <div className="p-4 space-y-2">
-              {[0, 1, 2].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
             </div>
           ) : users.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground">Nessun utente trovato.</p>
@@ -270,25 +349,58 @@ function AdminPage() {
               {users.map((u) => {
                 const isMe = u.id === me?.id;
                 const pending = !u.approved && !u.banned;
+                const daysLeft = subscriptionDaysLeft(u.subscription_started_at);
+                const subActive = u.subscription_status === "active" && (daysLeft ?? 0) > 0;
+                const subExpired = u.subscription_status === "active" && !subActive;
                 return (
                   <div key={u.id} className="flex items-center gap-3 px-4 py-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium text-sm truncate">{u.email}</span>
-                        {isMe && <Badge variant="outline" className="text-xs">Tu</Badge>}
+                        {isMe && (
+                          <Badge variant="outline" className="text-xs">
+                            Tu
+                          </Badge>
+                        )}
                         {pending && (
-                          <Badge variant="outline" className="bg-amber-500/15 text-amber-600 border-transparent text-xs flex items-center gap-1">
+                          <Badge
+                            variant="outline"
+                            className="bg-amber-500/15 text-amber-600 border-transparent text-xs flex items-center gap-1"
+                          >
                             <Clock className="w-3 h-3" /> In attesa
                           </Badge>
                         )}
                         {u.banned && (
-                          <Badge variant="outline" className="bg-destructive/15 text-destructive border-transparent text-xs">
+                          <Badge
+                            variant="outline"
+                            className="bg-destructive/15 text-destructive border-transparent text-xs"
+                          >
                             Bloccato
                           </Badge>
                         )}
                         {u.approved && !u.banned && !isMe && (
-                          <Badge variant="outline" className="bg-emerald-500/15 text-emerald-600 border-transparent text-xs">
+                          <Badge
+                            variant="outline"
+                            className="bg-emerald-500/15 text-emerald-600 border-transparent text-xs"
+                          >
                             Attivo
+                          </Badge>
+                        )}
+                        {subActive && (
+                          <Badge
+                            variant="outline"
+                            className="bg-primary/10 text-primary border-transparent text-xs flex items-center gap-1"
+                          >
+                            <CalendarClock className="w-3 h-3" /> Abbonamento — {daysLeft}g
+                            rimanenti
+                          </Badge>
+                        )}
+                        {subExpired && (
+                          <Badge
+                            variant="outline"
+                            className="bg-amber-500/15 text-amber-600 border-transparent text-xs flex items-center gap-1"
+                          >
+                            <CalendarOff className="w-3 h-3" /> Abbonamento scaduto
                           </Badge>
                         )}
                       </div>
@@ -334,21 +446,53 @@ function AdminPage() {
                               </Button>
                             </>
                           ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={actioning === u.id}
-                              onClick={() => setConfirmTarget({ user: u, action: u.banned ? "unban" : "ban" })}
-                              className={u.banned
-                                ? "text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-950 h-8"
-                                : "text-destructive border-destructive/30 hover:bg-destructive/10 h-8"}
-                            >
-                              {u.banned ? (
-                                <><CheckCircle2 className="h-3 w-3 mr-1" /> Sblocca</>
-                              ) : (
-                                <><Ban className="h-3 w-3 mr-1" /> Blocca</>
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={() =>
+                                  setConfirmTarget({ user: u, action: "activate_subscription" })
+                                }
+                                className="bg-primary text-primary-foreground hover:opacity-90 h-8"
+                              >
+                                <CalendarClock className="h-3 w-3 mr-1" />{" "}
+                                {subActive ? "Rinnova" : "Attiva abbonamento"}
+                              </Button>
+                              {u.subscription_status === "active" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    setConfirmTarget({ user: u, action: "deactivate_subscription" })
+                                  }
+                                  className="text-muted-foreground h-8"
+                                >
+                                  <CalendarOff className="h-3 w-3 mr-1" /> Disattiva
+                                </Button>
                               )}
-                            </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={actioning === u.id}
+                                onClick={() =>
+                                  setConfirmTarget({ user: u, action: u.banned ? "unban" : "ban" })
+                                }
+                                className={
+                                  u.banned
+                                    ? "text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-950 h-8"
+                                    : "text-destructive border-destructive/30 hover:bg-destructive/10 h-8"
+                                }
+                              >
+                                {u.banned ? (
+                                  <>
+                                    <CheckCircle2 className="h-3 w-3 mr-1" /> Sblocca
+                                  </>
+                                ) : (
+                                  <>
+                                    <Ban className="h-3 w-3 mr-1" /> Blocca
+                                  </>
+                                )}
+                              </Button>
+                            </>
                           )}
                         </div>
                       )}
@@ -370,12 +514,23 @@ function AdminPage() {
               {confirmTarget?.action === "reject" && "Rifiutare questo utente?"}
               {confirmTarget?.action === "ban" && "Bloccare questo utente?"}
               {confirmTarget?.action === "unban" && "Sbloccare questo utente?"}
+              {confirmTarget?.action === "activate_subscription" &&
+                "Attivare l'abbonamento annuale?"}
+              {confirmTarget?.action === "deactivate_subscription" && "Disattivare l'abbonamento?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmTarget?.action === "approve" && `${confirmTarget.user.email} potrà accedere alla piattaforma.`}
-              {confirmTarget?.action === "reject" && `${confirmTarget?.user.email} non potrà accedere. Potrai approvarlo in seguito aggiornando la lista.`}
-              {confirmTarget?.action === "ban" && `${confirmTarget?.user.email} non potrà più accedere. Potrai sbloccarlo in qualsiasi momento.`}
-              {confirmTarget?.action === "unban" && `${confirmTarget?.user.email} potrà tornare ad accedere alla piattaforma.`}
+              {confirmTarget?.action === "approve" &&
+                `${confirmTarget.user.email} potrà accedere alla piattaforma.`}
+              {confirmTarget?.action === "reject" &&
+                `${confirmTarget?.user.email} non potrà accedere. Potrai approvarlo in seguito aggiornando la lista.`}
+              {confirmTarget?.action === "ban" &&
+                `${confirmTarget?.user.email} non potrà più accedere. Potrai sbloccarlo in qualsiasi momento.`}
+              {confirmTarget?.action === "unban" &&
+                `${confirmTarget?.user.email} potrà tornare ad accedere alla piattaforma.`}
+              {confirmTarget?.action === "activate_subscription" &&
+                `Conferma solo dopo aver ricevuto il pagamento. Parte da oggi un countdown di ${SUBSCRIPTION_DAYS} giorni per ${confirmTarget?.user.email}.`}
+              {confirmTarget?.action === "deactivate_subscription" &&
+                `${confirmTarget?.user.email} tornerà nello stato di prova/scaduto in base alla data di approvazione.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -383,7 +538,9 @@ function AdminPage() {
             <AlertDialogAction
               onClick={handleBanAction}
               className={
-                confirmTarget?.action === "approve" || confirmTarget?.action === "unban"
+                confirmTarget?.action === "approve" ||
+                confirmTarget?.action === "unban" ||
+                confirmTarget?.action === "activate_subscription"
                   ? "bg-emerald-600 text-white hover:bg-emerald-700"
                   : "bg-destructive text-destructive-foreground hover:bg-destructive/90"
               }
@@ -392,6 +549,8 @@ function AdminPage() {
               {confirmTarget?.action === "reject" && "Rifiuta"}
               {confirmTarget?.action === "ban" && "Blocca accesso"}
               {confirmTarget?.action === "unban" && "Sblocca accesso"}
+              {confirmTarget?.action === "activate_subscription" && "Attiva abbonamento"}
+              {confirmTarget?.action === "deactivate_subscription" && "Disattiva abbonamento"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -410,7 +569,9 @@ function AdminPage() {
 
           {loadingStats ? (
             <div className="space-y-3 py-4">
-              {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full" />)}
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-20 w-full" />
+              ))}
             </div>
           ) : stats ? (
             <div className="space-y-5 py-2">
@@ -432,38 +593,83 @@ function AdminPage() {
 
               {/* Clienti */}
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Clienti</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                  Clienti
+                </h3>
                 <div className="grid grid-cols-2 gap-3">
                   <StatCard icon={Users} label="Totali" value={stats.clients.total} />
-                  <StatCard icon={CheckCircle2} label="Attivi" value={stats.clients.active} color="emerald" />
+                  <StatCard
+                    icon={CheckCircle2}
+                    label="Attivi"
+                    value={stats.clients.active}
+                    color="emerald"
+                  />
                 </div>
               </div>
 
               {/* Preventivi */}
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Preventivi</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                  Preventivi
+                </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <StatCard icon={FileText} label="Bozze" value={stats.quotes.byStatus.bozza} />
-                  <StatCard icon={FileText} label="Inviati" value={stats.quotes.byStatus.inviato} color="primary" />
-                  <StatCard icon={FileText} label="Accettati" value={stats.quotes.byStatus.accettato} color="emerald" />
-                  <StatCard icon={FileText} label="Rifiutati" value={stats.quotes.byStatus.rifiutato} color="red" />
+                  <StatCard
+                    icon={FileText}
+                    label="Inviati"
+                    value={stats.quotes.byStatus.inviato}
+                    color="primary"
+                  />
+                  <StatCard
+                    icon={FileText}
+                    label="Accettati"
+                    value={stats.quotes.byStatus.accettato}
+                    color="emerald"
+                  />
+                  <StatCard
+                    icon={FileText}
+                    label="Rifiutati"
+                    value={stats.quotes.byStatus.rifiutato}
+                    color="red"
+                  />
                 </div>
                 {stats.quotes.totalAccettati > 0 && (
                   <div className="mt-2 rounded-md bg-emerald-500/10 px-3 py-2 text-sm flex items-center justify-between">
-                    <span className="text-emerald-700 dark:text-emerald-400 font-medium">Valore accettati</span>
-                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">{euro(stats.quotes.totalAccettati)}</span>
+                    <span className="text-emerald-700 dark:text-emerald-400 font-medium">
+                      Valore accettati
+                    </span>
+                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                      {euro(stats.quotes.totalAccettati)}
+                    </span>
                   </div>
                 )}
               </div>
 
               {/* Fatture */}
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Fatture</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                  Fatture
+                </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <StatCard icon={Receipt} label="Bozze" value={stats.fatture.byStatus.bozza} />
-                  <StatCard icon={Receipt} label="Inviate" value={stats.fatture.byStatus.inviata} color="primary" />
-                  <StatCard icon={Receipt} label="Pagate" value={stats.fatture.byStatus.pagata} color="emerald" />
-                  <StatCard icon={Receipt} label="Scadute" value={stats.fatture.byStatus.scaduta} color="red" />
+                  <StatCard
+                    icon={Receipt}
+                    label="Inviate"
+                    value={stats.fatture.byStatus.inviata}
+                    color="primary"
+                  />
+                  <StatCard
+                    icon={Receipt}
+                    label="Pagate"
+                    value={stats.fatture.byStatus.pagata}
+                    color="emerald"
+                  />
+                  <StatCard
+                    icon={Receipt}
+                    label="Scadute"
+                    value={stats.fatture.byStatus.scaduta}
+                    color="red"
+                  />
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-3">
                   <div className="rounded-md bg-muted/50 px-3 py-2 text-sm flex items-center justify-between">
@@ -476,13 +682,17 @@ function AdminPage() {
                     <span className="text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-1.5">
                       <Wallet className="w-3.5 h-3.5" /> Incassato
                     </span>
-                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">{euro(stats.fatture.fatturatoIncassato)}</span>
+                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                      {euro(stats.fatture.fatturatoIncassato)}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            <p className="py-8 text-center text-sm text-muted-foreground">Nessun dato disponibile.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              Nessun dato disponibile.
+            </p>
           )}
         </DialogContent>
       </Dialog>
@@ -502,10 +712,13 @@ function StatCard({
   color?: "emerald" | "primary" | "red";
 }) {
   const colorClass =
-    color === "emerald" ? "text-emerald-600 dark:text-emerald-400" :
-    color === "primary" ? "text-primary" :
-    color === "red" ? "text-destructive" :
-    "text-foreground";
+    color === "emerald"
+      ? "text-emerald-600 dark:text-emerald-400"
+      : color === "primary"
+        ? "text-primary"
+        : color === "red"
+          ? "text-destructive"
+          : "text-foreground";
 
   return (
     <div className="rounded-md border bg-card px-3 py-2.5">

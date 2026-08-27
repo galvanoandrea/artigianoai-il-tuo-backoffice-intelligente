@@ -17,12 +17,22 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogOut, User, Lock } from "lucide-react";
-import { TRIAL_DAYS } from "@/lib/pricing";
+import { TRIAL_DAYS, SUBSCRIPTION_DAYS } from "@/lib/pricing";
 
 function isTrialExpired(approvedAt: string | null | undefined): boolean {
   if (!approvedAt) return false;
   const expiresAt = new Date(approvedAt).getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000;
   return Date.now() > expiresAt;
+}
+
+function isSubscriptionActive(
+  subscriptionStatus: string | null | undefined,
+  subscriptionStartedAt: string | null | undefined,
+): boolean {
+  if (subscriptionStatus !== "active" || !subscriptionStartedAt) return false;
+  const expiresAt =
+    new Date(subscriptionStartedAt).getTime() + SUBSCRIPTION_DAYS * 24 * 60 * 60 * 1000;
+  return Date.now() < expiresAt;
 }
 
 export const Route = createFileRoute("/dashboard")({
@@ -57,7 +67,9 @@ function DashboardLayout() {
       }
       const approvedAt = (data as any)?.approved_at ?? null;
       const subscriptionStatus = (data as any)?.subscription_status ?? null;
-      setBlocked(subscriptionStatus !== "active" && isTrialExpired(approvedAt));
+      const subscriptionStartedAt = (data as any)?.subscription_started_at ?? null;
+      const subActive = isSubscriptionActive(subscriptionStatus, subscriptionStartedAt);
+      setBlocked(!subActive && isTrialExpired(approvedAt));
       setAccessChecked(true);
     })();
     return () => {
